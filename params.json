@@ -1,0 +1,8 @@
+{
+"number_of_paths" : 3,
+"beta" : -1.50,
+"weight" : "time",
+"num_samples" : 100,
+"max_path_length" : 200,
+"route_utility_coeffs" : [0.2, 0.2, 0.2, 0.4]
+}
