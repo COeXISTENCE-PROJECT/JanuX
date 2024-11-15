@@ -15,19 +15,6 @@ def df_to_prettytable(df, header_message=None, print_every=1):
 
 def get_params(file_path):      # Read params.json, resolve dependencies
     params = read_json(file_path)
-    params = resolve_param_dependencies(params)
-    return params
-
-def resolve_param_dependencies(params):    # Resolving dependent parameters in params.json
-    for category, settings in params.items():
-        for key, value in settings.items():
-            if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
-                path = value[2:-1].split('.')   # Extract the reference path
-                ref_value = params
-                for step in path:
-                    ref_value = ref_value.get(step, {})
-                if not isinstance(ref_value, dict):     # Ensure it's not a nested structure
-                    params[category][key] = ref_value
     return params
 
 

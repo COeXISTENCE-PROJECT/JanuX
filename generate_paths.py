@@ -74,7 +74,7 @@ def _get_route_utilities(sampled_routes, proximity_func, coeffs, network):
     # RK: I would rename it to heuristics. And stick utility to something usual, namely a linear combination of distance, cost and time.
 
     # Based on FF times
-    free_flows = [_get_ff(route, network) for route in sampled_routes]
+    free_flows = [calculate_free_flow_time(route, network) for route in sampled_routes]
     utility1 = 1 / np.array(free_flows)
     utility1 = utility1 / np.sum(utility1) # RK: what is this formula? why not simply a sum of free flows?
 
@@ -163,30 +163,74 @@ def lcs_consecutive(X, Y):
 
 ################## FF Times #####################
 
-def _get_ff(path, network):
-    """ Get ff time for a given route """
-    length = pd.DataFrame(network.edges(data = True))
-    time = length[2].astype('str').str.split(':',expand=True)[1]
-    length[2] = time.str.replace('}','',regex=True).astype('float')
-    rou=[]
-    for i in range(len(path)):
-        if i < len(path) - 1:
-            for k in range(len(length[0])):
-                if (path[i] == length[0][k]) and (path[i + 1] == length[1][k]):
-                    rou.append(length[2][k])
-    return sum(rou)
+
+def calculate_free_flow_time(route: list[str], network: nx.DiGraph) -> float:
+    """
+    Calculate the free-flow travel time for a given route based on the network edges.
+
+    Args:
+        route (list[str]): A list of nodes representing the route.
+        network (nx.DiGraph): The directed graph representing the traffic network.
+
+    Returns:
+        float: The total free-flow travel time for the route.
+    """
+    # Create a DataFrame with edge attributes from the network
+    edges_df = pd.DataFrame(network.edges(data=True), columns=["source", "target", "attributes"])
+
+    # Extract travel time from edge attributes and clean up its format
+    edges_df["travel_time"] = (
+        edges_df["attributes"].astype('str').str.split(':',expand=True)[1].replace('}','',regex=True).astype('float')
+    )
+    
+    # Initialize total travel time
+    total_travel_time = 0.0
+
+    # Iterate through consecutive nodes in the route to calculate travel time
+    for source, target in zip(route[:-1], route[1:]):
+        # Filter for the matching edge in the DataFrame
+        matching_edge = edges_df[(edges_df["source"] == source) & (edges_df["target"] == target)]
+
+        if not matching_edge.empty:
+            total_travel_time += matching_edge["travel_time"].iloc[0]
+        else:
+            raise ValueError(f"No edge found between {source} and {target} in the network.")
+
+    return total_travel_time
 
 #################################################
 
 
-################## Disk Ops #####################
+################## To CSV #####################
 
-def paths_to_df(routes, network, origins, destinations):
-    """ Make a dataframe from the routes """
-    paths_df = pd.DataFrame(columns = [kc.ORIGINS, kc.DESTINATIONS, kc.PATH, kc.FREE_FLOW_TIME])
-    for od, paths in routes.items():
+def paths_to_df(routes: dict, network: nx.DiGraph, origins: dict, destinations: dict) -> pd.DataFrame:
+    """
+    Create a DataFrame from the routes with origin, destination, path, and free-flow time.
+
+    Args:
+        routes (dict): A dictionary where keys are (origin_idx, dest_idx) and values are lists of routes.
+        network (nx.DiGraph): The directed graph representing the traffic network.
+        origins (dict): A dictionary mapping origin indices to origin names.
+        destinations (dict): A dictionary mapping destination indices to destination names.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the origin, destination, path (as a string), and free-flow time.
+    """
+    # Initialize an empty DataFrame with the required columns
+    columns = [kc.ORIGINS, kc.DESTINATIONS, kc.PATH, kc.FREE_FLOW_TIME]
+    paths_df = pd.DataFrame(columns=columns)
+    # Iterate through the routes dictionary
+    for (origin_idx, dest_idx), paths in routes.items():
+        # Retrieve node names of the OD
+        origin_name = origins[origin_idx]
+        dest_name = destinations[dest_idx]
         for path in paths:
-            paths_df.loc[len(paths_df.index)] = [origins[od[0]], destinations[od[1]], list_to_string(path, ","), _get_ff(path, network)]
+            # Convert the path to a string format
+            path_as_str = list_to_string(path, ",")
+            # Calculate the free-flow travel time for the path
+            free_flow = calculate_free_flow_time(path, network)
+            # Append the row to the DataFrame
+            paths_df.loc[len(paths_df.index)] = [origin_name, dest_name, path_as_str, free_flow]
     return paths_df
 
 #################################################
@@ -195,7 +239,7 @@ def paths_to_df(routes, network, origins, destinations):
 ####################### Main #######################
 
 
-def generate_paths(network: nx.classes.digraph.DiGraph, origins: list[str], destinations: list[str], **kwargs) -> pd.DataFrame:
+def generate_paths(network: nx.DiGraph, origins: list[str], destinations: list[str], **kwargs) -> pd.DataFrame:
     params = get_params("params.json")
     
     for key, value in kwargs.items():
@@ -214,7 +258,6 @@ def generate_paths(network: nx.classes.digraph.DiGraph, origins: list[str], dest
     check_od_integrity(network, origins, destinations)
     routes = create_routes(network, number_of_paths, origins, destinations, beta, weight, coeffs, num_samples, max_path_length)
     paths_csv = paths_to_df(routes, network, origins, destinations)
-    df_to_prettytable(paths_csv)
     return paths_csv
 
 #################################################
