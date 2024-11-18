@@ -152,8 +152,9 @@ if __name__ == "__main__":
     route_file_path = "test/" + sim_params[kc.ROUTE_FILE_PATH]
 
     network = generate_network(connection_file_path, edge_file_path, route_file_path)
-    routes = generate_paths(network, origins, destinations, num_samples=20, number_of_paths =3)
-    df_to_prettytable(routes)
+    routes = generate_paths(network, origins, destinations, num_samples=100, number_of_paths=3)
+    #df_to_prettytable(routes)
+    routes.to_csv("test/routes.csv", index=False)
     
 
 #################################################

@@ -8,7 +8,6 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../')))
 
 from keychain import Keychain as kc
-from utils import df_to_prettytable
 from utils import get_params
 from utils import list_to_string
 
@@ -30,78 +29,39 @@ def check_od_integrity(network, origins, destinations):
 
 ############## Route Generation #################
 
-def create_routes(network, num_routes, origins, destinations, beta, weight, coeffs, num_samples=50, max_path_length=100):
+def create_routes(network, num_routes, origins, destinations, beta, weight, num_samples=50, max_path_length=100):
+    assert num_samples >= num_routes, f"Number of samples ({num_samples}) should be at least equal to the number of routes ({num_routes})"
+    assert max_path_length > 0, f"Maximum path length should be greater than 0"
     routes = dict()   # Tuple<od_id, dest_id> : List<routes>
-    for dest_idx, dest_code in destinations.items():
-        proximity_func = _get_proximity_function(network, dest_code, weight)   # Maps node -> proximity (cost)
-        for origin_idx, origin_code in origins.items():
-            sampled_routes = set()   # num_samples number of routes
-            while len(sampled_routes) < num_samples:
-                path = _path_generator(network, origin_code, dest_code, proximity_func, beta, max_path_length)
+    for dest_idx, dest_name in destinations.items():
+        node_potentials = dict(nx.shortest_path_length(network, target=dest_name, weight=weight))
+        for origin_idx, origin_name in origins.items():
+            sampled_routes = list()   # num_samples number of routes
+            while (len(sampled_routes) < num_samples) or (len(set(sampled_routes)) < num_routes):
+                path = _path_generator(network, origin_name, dest_name, node_potentials, beta, max_path_length)
                 if not path is None:
-                    sampled_routes.add(tuple(path))
+                    sampled_routes.append(tuple(path))
                     print(f"\r[INFO] Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}", end="")
-            routes[(origin_idx, dest_idx)] = _pick_routes_from_samples(sampled_routes, proximity_func, num_routes, coeffs, network)
-            print(f"\n[INFO] Selected {len(routes[(origin_idx, dest_idx)])} paths for {origin_idx} -> {dest_idx}")
+            routes[(origin_idx, dest_idx)] = _pick_routes_from_samples(sampled_routes, num_routes)
+            print(f"\n[INFO] Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
     return routes
 
 
-def _get_proximity_function(network, destination, weight):
-    # cost for all nodes that CAN access to destination
-    # RK: This is typically called node potential
-    distances_to_destination = dict(nx.shortest_path_length(network, target=destination, weight=weight))
-    # dead-end nodes have infinite cost
-    dead_nodes = [node for node in network.nodes if node not in distances_to_destination]
-    for node in dead_nodes:  distances_to_destination[node] = float("inf")
-    # return the lambda function
-    return lambda x: distances_to_destination[x]
+def _pick_routes_from_samples(sampled_routes: list[tuple], num_paths: int):
+    assert num_paths <= len(sampled_routes), f"Number of paths ({num_paths}) should be less than or equal to the number of sampled routes ({len(sampled_routes)})"
+    assert num_paths > 0, f"Number of paths should be greater than 0"
+    sampled_routes = np.array(sampled_routes, dtype=object)
+    # Get each unique route and their counts
+    unique_routes, route_counts = np.unique(sampled_routes, return_counts=True)
+    # Calculate sampling probabilities (according to their counts)
+    sampling_probabilities = route_counts / route_counts.sum()
+    # Sample from the unique items according to the probabilities
+    assert num_paths <= len(unique_routes), f"Cannot sample {num_paths} distinct items from {len(unique_routes)} unique items."
+    picked_routes = np.random.choice(unique_routes, size=num_paths, p=sampling_probabilities, replace=False)
+    return picked_routes
 
 
-def _pick_routes_from_samples(sampled_routes, proximity, num_paths, coeffs, network):
-    # RK: this function selects _num_paths_ routes of minimal utilty from the sampled
-    # what this should do is to pick them randomly (or with some non-uniform probability)
-    sampled_routes = list(sampled_routes)
-    # what we base our selection on
-    utility_dist = _get_route_utilities(sampled_routes, proximity, coeffs, network)
-    # route indices that maximize defined utilities
-    sorted_indices = np.argsort(utility_dist)[::-1] #RK: I'd say this can be sampled with prob of utility and not simply "pick n best"
-    paths_idcs = sorted_indices[:num_paths]
-    
-    return [sampled_routes[idx] for idx in paths_idcs]
-
-
-def _get_route_utilities(sampled_routes, proximity_func, coeffs, network):
-    # RK: I would rename it to heuristics. And stick utility to something usual, namely a linear combination of distance, cost and time.
-
-    # Based on FF times
-    free_flows = [calculate_free_flow_time(route, network) for route in sampled_routes]
-    utility1 = 1 / np.array(free_flows)
-    utility1 = utility1 / np.sum(utility1) # RK: what is this formula? why not simply a sum of free flows?
-
-    # Based on number of edges
-    route_lengths = [len(route) for route in sampled_routes]
-    utility2 = 1 / np.array(route_lengths)
-    utility2 = utility2 / np.sum(utility2) # this is never called length in transportation. In transport we use physical length and graph-theoretical length (number of hops) is almost never used as very sensitive to modelling artifacts.
-
-    # Based on proximity increase in consecutive nodes (how well & steady)
-    prox_increase = [[proximity_func(route[idx-1]) - proximity_func(node) for idx, node in enumerate(route[1:])] for route in sampled_routes]
-    mean_prox_increase = [np.mean(prox) for prox in prox_increase]
-    std_prox_increase = [np.std(prox) for prox in prox_increase]
-    utility3 = [mean_prox_increase[i] / std_prox_increase[i] for i in range(len(sampled_routes))]
-    utility3 = np.array(utility3) / np.sum(utility3)
-    
-    # Based on uniqueness of the route (how different from other routes)
-    lcs_values = [[lcs_consecutive(route, route2) for route2 in sampled_routes if route2 != route] for route in sampled_routes]
-    lcs_values = [np.mean(lcs) for lcs in lcs_values]
-    utility4 = 1 / np.array(lcs_values)
-    utility4 = utility4 / np.sum(utility4)
-
-    # Merge all with some coefficients
-    utilities = (coeffs[0] * utility1) + (coeffs[1] * utility2) + (coeffs[2] * utility3) + (coeffs[3] * utility4) #RK: Did you test if that actually works and allows to distinguish various kinds of paths? or is it augmented to one dimension and all properties are lost?
-    return utilities
-
-
-def _path_generator(network, origin, destination, proximity_func, beta, maxlen):
+def _path_generator(network, origin, destination, node_potentials, beta, maxlen):
     path, current_node = list(), origin
     while True:
         path.append(current_node)
@@ -110,53 +70,16 @@ def _path_generator(network, origin, destination, proximity_func, beta, maxlen):
         elif (not options) or (len(path) > maxlen):     return None
         else:       
             try:            
-                current_node = _logit(options, proximity_func, beta)
+                current_node = _logit(options, node_potentials, beta)
             except:
                 return None
 
 
-def _logit(options, cost_function, beta):
-    numerators = [np.exp(beta * cost_function(option)) for option in options]
+def _logit(options, node_potentials: dict, beta):
+    # If a node does not have a potential, it is a dead end, so we assign an infinite potential
+    numerators = [np.exp(beta * node_potentials.get(option, float("inf"))) for option in options]
     utilities = [numerator/sum(numerators) for numerator in numerators]
     return np.random.choice(options, p=utilities)
-
-
-def lcs_non_consecutive(X, Y):
-    """
-    The LCS of two sequences is the longest subsequence that is present in both sequences in the same order, 
-    but not necessarily consecutively.
-    """
-    m, n = len(X), len(Y)
-    L = [[None]*(n+1) for i in range(m+1)]
-    for i in range(m+1):
-        for j in range(n+1):
-            if i == 0 or j == 0 :
-                L[i][j] = 0
-            elif X[i-1] == Y[j-1]:
-                L[i][j] = L[i-1][j-1]+1
-            else:
-                L[i][j] = max(L[i-1][j], L[i][j-1])
-    return L[m][n]
-
-
-def lcs_consecutive(X, Y):
-    """
-    The LCS of two sequences is the longest subsequence that is present in both sequences in the same order, 
-    consecutively.
-    """
-    m, n = len(X), len(Y)
-    LCSuff = [[0 for k in range(n+1)] for l in range(m+1)]
-    result = 0
-    for i in range(m + 1):
-        for j in range(n + 1):
-            if i == 0 or j == 0:
-                LCSuff[i][j] = 0
-            elif X[i-1] == Y[j-1]:
-                LCSuff[i][j] = LCSuff[i-1][j-1] + 1
-                result = max(result, LCSuff[i][j])
-            else:
-                LCSuff[i][j] = 0
-    return result
 
 #################################################
 
@@ -248,7 +171,6 @@ def generate_paths(network: nx.DiGraph, origins: list[str], destinations: list[s
     number_of_paths = params[kc.NUMBER_OF_PATHS]
     beta = params[kc.BETA]
     weight = params[kc.WEIGHT]
-    coeffs = params[kc.ROUTE_UTILITY_COEFFS]
     num_samples = params[kc.NUM_SAMPLES]
     max_path_length = params[kc.MAX_PATH_LENGTH]
 
@@ -256,7 +178,7 @@ def generate_paths(network: nx.DiGraph, origins: list[str], destinations: list[s
     destinations = {i : dest for i, dest in enumerate(destinations)}
 
     check_od_integrity(network, origins, destinations)
-    routes = create_routes(network, number_of_paths, origins, destinations, beta, weight, coeffs, num_samples, max_path_length)
+    routes = create_routes(network, number_of_paths, origins, destinations, beta, weight, num_samples, max_path_length)
     paths_csv = paths_to_df(routes, network, origins, destinations)
     return paths_csv
 
