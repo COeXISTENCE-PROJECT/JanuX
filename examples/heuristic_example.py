@@ -4,7 +4,8 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
 from graph_builders import build_digraph
-from path_generators import basic_path_generator
+from path_generators import calculate_free_flow_time
+from path_generators import heuristic_path_generator
 from visualizers import show_multi_routes
 
 ##################### PARAMS ############################
@@ -29,12 +30,28 @@ kwargs = {
     "number_of_paths": 3
 }
 
+def heuristic1(path1, path2, path3, network):
+    return -sum(len(path) for path in [path1, path2, path3])
+
+def heuristic2(path1, path2, path3, network):
+    return -sum(calculate_free_flow_time(path, network) for path in [path1, path2, path3])
+
+def heuristic3(path1, path2, path3, network):
+    common_edges1 = set(path1).intersection(set(path2))
+    common_edges2 = set(path1).intersection(set(path3))
+    common_edges3 = set(path2).intersection(set(path3))
+    max_similarity = max(len(common_edges1), len(common_edges2), len(common_edges3))
+    return -max_similarity
+
+heuristics = [heuristic1, heuristic2, heuristic3]
+heur_weights = [0.2, 0.5, 0.3]
+
 ########################################################
     
 if __name__ == "__main__":
     # Generate network and paths
     network = build_digraph(connection_file_path, edge_file_path, route_file_path)
-    routes = basic_path_generator(network, origins, destinations, **kwargs)
+    routes = heuristic_path_generator(network, origins, destinations, heuristics, heur_weights, **kwargs)
     
     if show_routes:
         # Visualize paths

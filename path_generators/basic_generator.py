@@ -8,13 +8,14 @@ import numpy as np
 import pandas as pd
 
 from keychain import Keychain as kc
+from path_generators import calculate_free_flow_time
 from utils import get_params
 from utils import list_to_string
 
 
 #################################################
 
-def basic_route_generator(network: nx.DiGraph, 
+def basic_path_generator(network: nx.DiGraph, 
                           origins: list[str], 
                           destinations: list[str], 
                           **kwargs) -> pd.DataFrame:
@@ -38,21 +39,21 @@ def basic_route_generator(network: nx.DiGraph,
         A list of destination node names in the network.
     **kwargs : dict
         Additional keyword arguments to override default parameters from `params.json`. Supported keys:
-        - "NUMBER_OF_PATHS": int, number of distinct routes to generate per origin-destination pair.
-        - "BETA": float, parameter controlling the stochasticity of route sampling.
-        - "WEIGHT": str, edge attribute used as the cost metric (e.g., travel time or distance).
-        - "NUM_SAMPLES": int, number of sampled routes before selecting the desired number of paths.
-        - "MAX_PATH_LENGTH": int, maximum length of a path in terms of nodes.
-        - "RANDOM_SEED": int, optional random seed for reproducibility.
+        - "number_of_paths": int, number of distinct routes to generate per origin-destination pair.
+        - "beta": float, parameter controlling the stochasticity of route sampling.
+        - "weight": str, edge attribute used as the cost metric (e.g., travel time or distance).
+        - "num_samples": int, number of sampled routes before selecting the desired number of paths.
+        - "max_path_length": int, maximum length of a path in terms of nodes.
+        - "random_seed": int, optional random seed for reproducibility.
 
     Returns:
     -------
     pd.DataFrame
         A DataFrame with columns:
-        - `ORIGINS`: Names of the origin nodes.
-        - `DESTINATIONS`: Names of the destination nodes.
-        - `PATH`: The generated route as a string of node names separated by commas.
-        - `FREE_FLOW_TIME`: The travel time of the route based on edge weights.
+        - `origins`: Names of the origin nodes.
+        - `destinations`: Names of the destination nodes.
+        - `path`: The generated route as a string of node names separated by commas.
+        - `free_flow_time`: The travel time of the route based on edge weights.
 
     Raises:
     ------
@@ -60,7 +61,10 @@ def basic_route_generator(network: nx.DiGraph,
         - If the origins or destinations are not in the network.
         - If any destination is unreachable by any origin.
         - If the number of samples is insufficient to generate the required number of unique routes.
-
+        
+    Notes:
+    -----
+    - The function ensures reproducibility when a random seed is provided.
     """
         
     # Get parameters from the params.json file and update them with the provided kwargs
@@ -255,36 +259,6 @@ def _logit(options: list, node_potentials: dict, beta: float, rng: np.random.Gen
 #################################################
 
 
-################## FF Times #####################
-
-
-def _calculate_free_flow_time(route: list[str], network: nx.DiGraph) -> float:
-    # Create a DataFrame with edge attributes from the network
-    edges_df = pd.DataFrame(network.edges(data=True), columns=["source", "target", "attributes"])
-
-    # Extract travel time from edge attributes and clean up its format
-    edges_df["travel_time"] = (
-        edges_df["attributes"].astype('str').str.split(':',expand=True)[1].replace('}','',regex=True).astype('float')
-    )
-    
-    # Initialize total travel time
-    total_travel_time = 0.0
-
-    # Iterate through consecutive nodes in the route to calculate travel time
-    for source, target in zip(route[:-1], route[1:]):
-        # Filter for the matching edge in the DataFrame
-        matching_edge = edges_df[(edges_df["source"] == source) & (edges_df["target"] == target)]
-
-        if not matching_edge.empty:
-            total_travel_time += matching_edge["travel_time"].iloc[0]
-        else:
-            raise ValueError(f"No edge found between {source} and {target} in the network.")
-
-    return total_travel_time
-
-#################################################
-
-
 ################## To DF #####################
 
 def paths_to_df(routes: dict, network: nx.DiGraph, origins: dict, destinations: dict) -> pd.DataFrame:
@@ -300,7 +274,7 @@ def paths_to_df(routes: dict, network: nx.DiGraph, origins: dict, destinations: 
             # Convert the path to a string format
             path_as_str = list_to_string(path, ",")
             # Calculate the free-flow travel time for the path
-            free_flow = _calculate_free_flow_time(path, network)
+            free_flow = calculate_free_flow_time(path, network)
             # Append the row to the DataFrame
             paths_df.loc[len(paths_df.index)] = [origin_name, dest_name, path_as_str, free_flow]
     return paths_df
