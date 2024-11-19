@@ -1,86 +1,40 @@
-import xml.etree.ElementTree as ET
-import networkx as nx
-import matplotlib.pyplot as plt
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
+import xml.etree.ElementTree as ET
 
 
 #################################################
 
-def show_paths(nod_file_path, edg_file_path, paths, origin, destination, **kwargs):
+def show_multi_routes(nod_file_path: str, 
+                      edg_file_path: str, 
+                      paths: list[list[str]], 
+                      origin: str, 
+                      destination: str, 
+                      **kwargs):
     # Parse the network
-    nodes, edges = parse_network_files(nod_file_path, edg_file_path)
-    graph = create_graph(nodes, edges)
+    nodes, edges = _parse_network_files(nod_file_path, edg_file_path)
+    graph = _create_graph(nodes, edges)
     # Visualize the path
-    visualize_path(graph, paths, origin, destination, **kwargs)
+    visualize_paths(graph, paths, origin, destination, **kwargs)
     
 #################################################
 
 
-def visualize_path(graph, paths, origin_edge, destination_edge,
-                   save_path=None,
-                   title="Path Visualization",
-                   cmap_names=['Reds', 'Blues', 'Greens', 'Purples', 'Oranges'],
-                   offsets=[-6, -3, 3, 9],
-                   figsize=(12, 8),
-                   xcrop=None,
-                   ycrop=None):
-    """
-    Visualizes paths on a directed graph with highlighted origin and destination edges.
-
-    Parameters:
-    -----------
-    graph : networkx.DiGraph
-        The directed graph containing nodes and edges with positional attributes.
-
-    paths : list of list of str
-        A list of paths, where each path is a list of edge IDs.
-
-    origin_edge : str
-        The edge ID representing the starting edge.
-
-    destination_edge : str
-        The edge ID representing the ending edge.
-
-    title : str, optional
-        The title of the plot. Default is "Path Visualization".
-
-    cmap_names : list of str, optional
-        A list of sequential colormap names to use for coloring the paths. Each path gets a unique colormap. 
-        Default is ['Reds', 'Blues', 'Greens', 'Purples', 'Oranges'].
-
-    offsets : list of float, optional
-        A list of offsets to separate the paths visually. Each path gets a unique offset. 
-        Default is [-6, -3, 3, 9].
-
-    figsize : tuple of float, optional
-        The size of the figure (width, height) in inches. Default is (12, 8).
-
-    xcrop : tuple of float, optional
-        A tuple (xmin, xmax) to crop the x-axis of the plot. Default is None (no cropping).
-
-    ycrop : tuple of float, optional
-        A tuple (ymin, ymax) to crop the y-axis of the plot. Default is None (no cropping).
-
-    Raises:
-    -------
-    AssertionError
-        If the number of paths exceeds the number of available color maps or offsets.
-
-    ValueError
-        If the origin or destination edge is not found in the graph.
-
-    Notes:
-    ------
-    - The function highlights the origin and destination edges in black.
-    - Paths are visualized using unique colors for each edge along the path, excluding the origin and destination edges.
-    - Paths are visually separated using the specified offsets.
-
-    Example:
-    --------
-    visualize_path(graph, paths, 'edge_1', 'edge_2', title="My Path Plot")
-    """
+def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str, destination_edge: str,
+                   save_file_path: str | None = None,
+                   title: str = "Path Visualization",
+                   cmap_names: list[str] = ['Reds', 'Blues', 'Greens', 'Purples', 'Oranges'],
+                   offsets: list[float] = [-6, -3, 3, 9],
+                   figsize: tuple[int] = (12, 8),
+                   xcrop: tuple[float, float] | None = None,
+                   ycrop: tuple[float, float] | None = None):
     
     assert len(paths) <= len(cmap_names), f"{len(cmap_names)} color maps is not variate enough to visualize {len(paths)} paths."
     assert len(paths) <= len(offsets), f"{len(offsets)} offsets is not variate enough to visualize {len(paths)} paths."
@@ -132,13 +86,13 @@ def visualize_path(graph, paths, origin_edge, destination_edge,
     plt.title(title)
     
     # Save the plot if requested
-    if save_path is not None:
-        plt.savefig(save_path)
+    if save_file_path is not None:
+        plt.savefig(save_file_path)
         
     plt.show()
     
 
-def parse_network_files(nod_file, edg_file):
+def _parse_network_files(nod_file, edg_file):
     """
     Parses nodes and edges from the given network files.
     """
@@ -159,7 +113,7 @@ def parse_network_files(nod_file, edg_file):
     return nodes, edges
 
 
-def create_graph(nodes, edges):
+def _create_graph(nodes, edges):
     """
     Creates a directed graph from nodes and edges.
     """

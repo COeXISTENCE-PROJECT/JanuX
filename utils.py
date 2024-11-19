@@ -1,4 +1,5 @@
 import json
+
 from prettytable import PrettyTable
 
 def df_to_prettytable(df, header_message=None, print_every=1):

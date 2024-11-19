@@ -1,0 +1,1 @@
+from .basic_generator import basic_route_generator

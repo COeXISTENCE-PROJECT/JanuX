@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
+
 import lxml
 import networkx as nx
 import pandas as pd
@@ -10,7 +15,7 @@ from utils import remove_double_quotes
 
 #################################################
 
-def generate_network(connection_file: str, edge_file: str, route_file: str) -> nx.DiGraph:
+def build_digraph(connection_file: str, edge_file: str, route_file: str) -> nx.DiGraph:
     """
     Generates a traffic network graph from XML files.
 

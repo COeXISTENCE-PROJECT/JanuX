@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
+
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -9,7 +14,7 @@ from utils import list_to_string
 
 #################################################
 
-def generate_paths(network: nx.DiGraph, origins: list[str], destinations: list[str], **kwargs) -> pd.DataFrame:
+def basic_route_generator(network: nx.DiGraph, origins: list[str], destinations: list[str], **kwargs) -> pd.DataFrame:
     params = get_params("params.json")
     
     for key, value in kwargs.items():
@@ -26,8 +31,8 @@ def generate_paths(network: nx.DiGraph, origins: list[str], destinations: list[s
 
     check_od_integrity(network, origins, destinations)
     routes = create_routes(network, number_of_paths, origins, destinations, beta, weight, num_samples, max_path_length)
-    paths_csv = paths_to_df(routes, network, origins, destinations)
-    return paths_csv
+    routes = paths_to_df(routes, network, origins, destinations)
+    return routes
 
 #################################################
 
@@ -35,21 +40,23 @@ def generate_paths(network: nx.DiGraph, origins: list[str], destinations: list[s
 ############## OD Integrity #################
 
 def check_od_integrity(network, origins, destinations):
-    # RK: @Onur TO DO this can be replaced with: https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.multi_source_dijkstra_path.html#networkx.algorithms.shortest_paths.weighted.multi_source_dijkstra_path
-    for dest_idx, destination in destinations.items():
-        if not destination in network.nodes:    raise ValueError(f"Destination {dest_idx} is not in the network")
-        distances_to_destination = dict(nx.shortest_path_length(network, target=destination))
-        for origin_idx, origin in origins.items():
-            if not origin in network.nodes:     raise ValueError(f"Origin {origin_idx} is not in the network")
-            elif not origin in distances_to_destination:
-                raise ValueError(f"Origin {origin_idx} cannot reach destination {dest_idx}")
+    for origin in origins.values():
+        assert origin in network.nodes, f"Origin {origin} is not in the network"
+    for destination in destinations.values():
+        assert destination in network.nodes, f"Destination {destination} is not in the network"
+        
+    for origin_idx, origin in origins.items():
+        paths_from_origin = nx.multi_source_dijkstra_path(network, sources=[origin])
+        for dest_idx, destination in destinations.items():
+            assert destination in paths_from_origin, f"Origin {origin_idx} cannot reach destination {dest_idx}"
 
 #################################################
 
 
 ############## Route Generation #################
 
-def create_routes(network, num_routes, origins, destinations, beta, weight, num_samples=50, max_path_length=100):
+def create_routes(network: nx.DiGraph, num_routes: int, origins: list[str], destinations: list[str], \
+    beta: float, weight: str, num_samples: int=50, max_path_length:int=100) -> dict:
     assert num_samples >= num_routes, f"Number of samples ({num_samples}) should be at least equal to the number of routes ({num_routes})"
     assert max_path_length > 0, f"Maximum path length should be greater than 0"
     routes = dict()   # Tuple<od_id, dest_id> : List<routes>
