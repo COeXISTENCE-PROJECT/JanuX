@@ -124,9 +124,9 @@ def visualize_path(graph, paths, origin_edge, destination_edge,
             
     # Crop the plot if requested
     if xcrop is not None:
-        plt.xlim(1500, 3000)
+        plt.xlim(xcrop)
     if ycrop is not None:
-        plt.ylim(0, 900)
+        plt.ylim(ycrop)
     
     # Set the title and show the plot
     plt.title(title)

@@ -22,4 +22,4 @@ if __name__ == "__main__":
     # Origin and destination
     origin, destination = '154551772#1', '-115604057#1'
 
-    show_paths(nod_file_path, edg_file_path, paths, origin, destination, xcrop=(1500, 3000), ycrop=(0, 900), save_path='test/paths.png')
+    show_paths(nod_file_path, edg_file_path, paths, origin, destination, xcrop=(1500, 3000), ycrop=(300, 900), save_path='test/paths.png')
