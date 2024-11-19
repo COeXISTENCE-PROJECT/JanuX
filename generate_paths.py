@@ -1,15 +1,35 @@
-import lxml
 import networkx as nx
 import numpy as np
-import os
 import pandas as pd
-import sys
-
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../')))
 
 from keychain import Keychain as kc
 from utils import get_params
 from utils import list_to_string
+
+
+#################################################
+
+def generate_paths(network: nx.DiGraph, origins: list[str], destinations: list[str], **kwargs) -> pd.DataFrame:
+    params = get_params("params.json")
+    
+    for key, value in kwargs.items():
+        params[key] = value
+
+    number_of_paths = params[kc.NUMBER_OF_PATHS]
+    beta = params[kc.BETA]
+    weight = params[kc.WEIGHT]
+    num_samples = params[kc.NUM_SAMPLES]
+    max_path_length = params[kc.MAX_PATH_LENGTH]
+
+    origins = {i : origin for i, origin in enumerate(origins)}
+    destinations = {i : dest for i, dest in enumerate(destinations)}
+
+    check_od_integrity(network, origins, destinations)
+    routes = create_routes(network, number_of_paths, origins, destinations, beta, weight, num_samples, max_path_length)
+    paths_csv = paths_to_df(routes, network, origins, destinations)
+    return paths_csv
+
+#################################################
 
 
 ############## OD Integrity #################
@@ -38,7 +58,7 @@ def create_routes(network, num_routes, origins, destinations, beta, weight, num_
         for origin_idx, origin_name in origins.items():
             sampled_routes = list()   # num_samples number of routes
             while (len(sampled_routes) < num_samples) or (len(set(sampled_routes)) < num_routes):
-                path = _path_generator(network, origin_name, dest_name, node_potentials, beta, max_path_length)
+                path = _sample_single_route(network, origin_name, dest_name, node_potentials, beta, max_path_length)
                 if not path is None:
                     sampled_routes.append(tuple(path))
                     print(f"\r[INFO] Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}", end="")
@@ -61,7 +81,7 @@ def _pick_routes_from_samples(sampled_routes: list[tuple], num_paths: int):
     return picked_routes
 
 
-def _path_generator(network, origin, destination, node_potentials, beta, maxlen):
+def _sample_single_route(network, origin, destination, node_potentials, beta, maxlen):
     path, current_node = list(), origin
     while True:
         path.append(current_node)
@@ -87,7 +107,7 @@ def _logit(options, node_potentials: dict, beta):
 ################## FF Times #####################
 
 
-def calculate_free_flow_time(route: list[str], network: nx.DiGraph) -> float:
+def _calculate_free_flow_time(route: list[str], network: nx.DiGraph) -> float:
     """
     Calculate the free-flow travel time for a given route based on the network edges.
 
@@ -124,7 +144,7 @@ def calculate_free_flow_time(route: list[str], network: nx.DiGraph) -> float:
 #################################################
 
 
-################## To CSV #####################
+################## To DF #####################
 
 def paths_to_df(routes: dict, network: nx.DiGraph, origins: dict, destinations: dict) -> pd.DataFrame:
     """
@@ -151,35 +171,9 @@ def paths_to_df(routes: dict, network: nx.DiGraph, origins: dict, destinations: 
             # Convert the path to a string format
             path_as_str = list_to_string(path, ",")
             # Calculate the free-flow travel time for the path
-            free_flow = calculate_free_flow_time(path, network)
+            free_flow = _calculate_free_flow_time(path, network)
             # Append the row to the DataFrame
             paths_df.loc[len(paths_df.index)] = [origin_name, dest_name, path_as_str, free_flow]
     return paths_df
-
-#################################################
-
-
-####################### Main #######################
-
-
-def generate_paths(network: nx.DiGraph, origins: list[str], destinations: list[str], **kwargs) -> pd.DataFrame:
-    params = get_params("params.json")
-    
-    for key, value in kwargs.items():
-        params[key] = value
-
-    number_of_paths = params[kc.NUMBER_OF_PATHS]
-    beta = params[kc.BETA]
-    weight = params[kc.WEIGHT]
-    num_samples = params[kc.NUM_SAMPLES]
-    max_path_length = params[kc.MAX_PATH_LENGTH]
-
-    origins = {i : origin for i, origin in enumerate(origins)}
-    destinations = {i : dest for i, dest in enumerate(destinations)}
-
-    check_od_integrity(network, origins, destinations)
-    routes = create_routes(network, number_of_paths, origins, destinations, beta, weight, num_samples, max_path_length)
-    paths_csv = paths_to_df(routes, network, origins, destinations)
-    return paths_csv
 
 #################################################
