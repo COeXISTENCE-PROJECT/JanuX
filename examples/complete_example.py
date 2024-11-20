@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
 from graph_builders import build_digraph
-from path_generators import basic_path_generator
+from path_generators import basic_generator
 from visualizers import show_multi_routes
 
 ##################### PARAMS ############################
@@ -26,7 +26,8 @@ routes_csv_path = "examples/results/routes.csv"
 kwargs = {
     "random_seed": 42,
     "num_samples": 100,
-    "number_of_paths": 3
+    "number_of_paths": 3,
+    "beta": -2
 }
 
 ########################################################
@@ -34,7 +35,7 @@ kwargs = {
 if __name__ == "__main__":
     # Generate network and paths
     network = build_digraph(connection_file_path, edge_file_path, route_file_path)
-    routes = basic_path_generator(network, origins, destinations, **kwargs)
+    routes = basic_generator(network, origins, destinations, **kwargs)
     
     if show_routes:
         # Visualize paths

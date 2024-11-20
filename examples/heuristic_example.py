@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
 from graph_builders import build_digraph
 from path_generators import calculate_free_flow_time
-from path_generators import heuristic_path_generator
+from path_generators import heuristic_generator
 from visualizers import show_multi_routes
 
 ##################### PARAMS ############################
@@ -51,7 +51,7 @@ heur_weights = [0.2, 0.5, 0.3]
 if __name__ == "__main__":
     # Generate network and paths
     network = build_digraph(connection_file_path, edge_file_path, route_file_path)
-    routes = heuristic_path_generator(network, origins, destinations, heuristics, heur_weights, **kwargs)
+    routes = heuristic_generator(network, origins, destinations, heuristics, heur_weights, **kwargs)
     
     if show_routes:
         # Visualize paths
