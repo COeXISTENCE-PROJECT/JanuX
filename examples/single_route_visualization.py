@@ -33,6 +33,8 @@ path = ['154551772#1', '115604051#0', '-115602933#5', '-115602933#4', '115604048
 origin, destination = '154551772#1', '-115604057#1'
 
 # Figure crop ranges for the visualization
+autocrop = True
+# or
 xcrop = (1500, 3000)
 ycrop = (300, 1200)
 
@@ -41,4 +43,4 @@ save_figure_to = 'examples/figures/single_path.png'
 ########################################################
 
 if __name__ == "__main__":
-    show_single_route(nod_file_path, edg_file_path, path, origin, destination, xcrop=xcrop, ycrop=ycrop, save_file_path=save_figure_to)
+    show_single_route(nod_file_path, edg_file_path, path, origin, destination, autocrop=autocrop, xcrop=xcrop, ycrop=ycrop, save_file_path=save_figure_to)

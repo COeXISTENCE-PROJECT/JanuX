@@ -34,6 +34,7 @@ edge_file_path = "examples/network_files/csomor1.edg.xml"
 route_file_path = "examples/network_files/csomor1.rou.xml"
 nod_file_path = "examples/network_files/csomor1.nod.xml"
 
+autocrop = True
 xcrop = (1500, 3000)
 ycrop = (300, 1200)
 
@@ -42,9 +43,9 @@ routes_csv_path = "examples/results/routes.csv"
 
 kwargs = {
     "random_seed": 42,
-    "num_samples": 100,
+    "num_samples": 200,
     "number_of_paths": 3,
-    "beta": -2
+    "beta": -3
 }
 
 ########################################################
@@ -62,7 +63,7 @@ if __name__ == "__main__":
                 routes_to_show = routes[(routes["origins"] == origin) & (routes["destinations"] == destination)]['path']
                 routes_to_show = [route.split(",") for route in routes_to_show]
                 
-                show_multi_routes(nod_file_path, edge_file_path, routes_to_show, origin, destination, \
+                show_multi_routes(nod_file_path, edge_file_path, routes_to_show, origin, destination, autocrop=autocrop,\
                     xcrop=xcrop, ycrop=ycrop, save_file_path=save_path, title=f"Origin: {origin_idx}({origin}), Destination: {dest_idx}({destination})")
         
     routes.to_csv(routes_csv_path, index=False)

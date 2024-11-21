@@ -36,6 +36,8 @@ paths = [path1, path2, path3]
 origin, destination = '154551772#1', '-115604057#1'
 
 # Figure crop ranges for the visualization
+autocrop = True
+# or
 xcrop = (1500, 3000)
 ycrop = (300, 1200)
 
@@ -44,4 +46,4 @@ save_figure_to = 'examples/figures/multi_paths.png'
 ########################################################
 
 if __name__ == "__main__":
-    show_multi_routes(nod_file_path, edg_file_path, paths, origin, destination, xcrop=xcrop, ycrop=ycrop, save_file_path=save_figure_to)
+    show_multi_routes(nod_file_path, edg_file_path, paths, origin, destination, autocrop=autocrop, xcrop=xcrop, ycrop=ycrop, save_file_path=save_figure_to)
