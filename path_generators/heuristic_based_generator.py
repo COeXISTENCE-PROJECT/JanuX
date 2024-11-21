@@ -7,10 +7,14 @@ import inspect
 import logging
 import networkx as nx
 import numpy as np
+import pandas as pd
 
 from typing import Callable
+
+from path_generators import calculate_free_flow_time
+from path_generators import paths_to_df
 from path_generators.basic_generator import BasicPathGenerator
-from utils import list_to_string
+from utils import iterable_to_string
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 
@@ -59,7 +63,7 @@ class HeuristicPathGenerator(BasicPathGenerator):
         self.heur_weights = heur_weights
         
         
-    def generate_routes(self):
+    def generate_routes(self, as_df: bool = True) -> pd.DataFrame | dict:
         """
         Generates routes for all origin-destination pairs using heuristic-based selection.
 
@@ -71,7 +75,10 @@ class HeuristicPathGenerator(BasicPathGenerator):
         1. For each destination node, calculate node potentials using shortest path lengths.
         2. For each origin node, sample a specified number of unique paths to the destination.
         3. Use heuristics and corresponding weights to evaluate and select the desired number of paths.
-        4. Convert the selected routes into a structured DataFrame.
+        4. Convert the selected routes into a structured DataFrame, if requested.
+        
+        Args:
+            as_df (bool): A flag to determine whether to return the routes as a DataFrame or a dictionary.
 
         Returns:
             pd.DataFrame: A DataFrame containing the generated routes with the following columns:
@@ -98,11 +105,15 @@ class HeuristicPathGenerator(BasicPathGenerator):
                     if not path is None:
                         sampled_routes.add(tuple(path))
                 logging.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
-                sampled_routes = sorted(list(sampled_routes), key=lambda x: list_to_string(x))
+                sampled_routes = sorted(list(sampled_routes), key=lambda x: iterable_to_string(x))
                 routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
                 logging.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
-        routes_df = self._paths_to_df(routes)
-        return routes_df
+        if as_df:
+            free_flows = {od: [calculate_free_flow_time(route, self.network) for route in routes[od]] for od in routes}
+            routes_df = paths_to_df(routes, self.origins, self.destinations, free_flows)
+            return routes_df
+        else:
+            return routes
 
 
     def _pick_routes_from_samples(self, sampled_routes: list[tuple]) -> list[tuple]:
@@ -169,3 +180,16 @@ class HeuristicPathGenerator(BasicPathGenerator):
             # Check if the heuristic is deterministic
             assert heuristic(*sampled_routes[:self.number_of_paths], self.network) == heuristic(*sampled_routes[:self.number_of_paths], self.network), f"Each heuristic must be deterministic, but {heuristic.__name__} is not."
         assert len(self.heur_weights) == len(self.heuristics), f"Number of heuristic weights does not match with number of heuristics. ({len(self.heur_weights)} and {len(self.heuristics)})"
+        
+        
+        
+    def check_od_integrity(self):
+        super().check_od_integrity()
+        
+    
+    def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> list[str] | None:
+        return super()._sample_single_route(origin, destination, node_potentials)
+    
+    
+    def _logit(self, options: list, node_potentials: dict) -> str:
+        return super()._logit(options, node_potentials)

@@ -10,9 +10,11 @@ import pandas as pd
 
 from keychain import Keychain as kc
 from path_generators import calculate_free_flow_time
+from path_generators import check_od_integrity
+from path_generators import paths_to_df
 from path_generators.base_generator import PathGenerator
 from utils import get_params
-from utils import list_to_string
+from utils import iterable_to_string
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 
@@ -45,8 +47,6 @@ class BasicPathGenerator(PathGenerator):
             Samples a single path probabilistically from an origin to a destination.
         _pick_routes_from_samples(sampled_routes: list[tuple]) -> list[tuple]:
             Selects the desired number of paths from a set of sampled routes based on their frequencies.
-        _paths_to_df(routes: dict) -> pd.DataFrame:
-            Converts the generated routes into a DataFrame with relevant details like free-flow time.
         _logit(options: list, node_potentials: dict) -> str:
             Selects a node probabilistically based on logit probabilities using node potentials.
     """
@@ -57,6 +57,7 @@ class BasicPathGenerator(PathGenerator):
                  **kwargs):
         
         super().__init__(network)
+        check_od_integrity(self.network, origins, destinations)
 
         # Convert origin and destination names to indices
         self.origins = dict(enumerate(origins))
@@ -78,39 +79,18 @@ class BasicPathGenerator(PathGenerator):
         np.random.seed(self.random_seed)
         self.rng = np.random.default_rng(self.random_seed)
         
-        self.check_od_integrity()
         
-        
-    def check_od_integrity(self):
-        """
-        Validates the integrity of origin-destination pairs in the network.
-
-        This method ensures that:
-        1. All origin and destination nodes are present in the network.
-        2. Each origin node can reach all specified destination nodes.
-
-        Raises:
-            AssertionError: If an origin or destination node is missing from the network or if an origin cannot reach a destination.
-        """
-        for origin in self.origins.values():
-            assert origin in self.network.nodes, f"Origin {origin} is not in the network"
-        for destination in self.destinations.values():
-            assert destination in self.network.nodes, f"Destination {destination} is not in the network."
-            
-        for origin_idx, origin in self.origins.items():
-            paths_from_origin = nx.multi_source_dijkstra_path(self.network, sources=[origin])
-            for dest_idx, destination in self.destinations.items():
-                assert destination in paths_from_origin, f"Origin {origin_idx} cannot reach destination {dest_idx}."
-                
-    
-    def generate_routes(self) -> dict:
+    def generate_routes(self, as_df: bool = True) -> pd.DataFrame | dict:
         """
         Generates paths for all origin-destination (OD) pairs in the network.
 
         This method samples multiple paths between each origin and destination pair
         using a probabilistic approach. It selects the desired number of unique routes
         based on sampling probabilities, converts them into a structured format, 
-        and returns them as a DataFrame.
+        and returns them as a DataFrame or a dictionary.
+        
+        Args:
+            as_df (bool): A flag to determine whether to return the routes as a DataFrame or a dictionary. 
 
         Returns:
             pd.DataFrame: A DataFrame containing the generated routes with the following columns:
@@ -139,8 +119,12 @@ class BasicPathGenerator(PathGenerator):
                 logging.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
                 routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
                 logging.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
-        routes_df = self._paths_to_df(routes)
-        return routes_df
+        if as_df:
+            free_flows = {od: [calculate_free_flow_time(route, self.network) for route in routes[od]] for od in routes}
+            routes_df = paths_to_df(routes, self.origins, self.destinations, free_flows)
+            return routes_df
+        else:
+            return routes
 
 
     def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> list[str] | None:
@@ -200,38 +184,21 @@ class BasicPathGenerator(PathGenerator):
         assert self.number_of_paths <= len(sampled_routes), f"Number of paths ({self.number_of_paths}) should be less than or equal to the number of sampled routes ({len(sampled_routes)})"
         assert self.number_of_paths > 0, f"Number of paths should be greater than 0"
         
-        sampled_routes = np.array(sampled_routes, dtype=object)
+        sampled_routes_by_str = np.array([iterable_to_string(route, ",") for route in sampled_routes])
         # Get each unique route and their counts
-        unique_routes, route_counts = np.unique(sampled_routes, return_counts=True)
+        unique_routes, route_counts = np.unique(sampled_routes_by_str, return_counts=True)
         # Calculate sampling probabilities (according to their counts)
         sampling_probabilities = route_counts / route_counts.sum()
         # Sample from the unique items according to the probabilities
         assert self.number_of_paths <= len(unique_routes), f"Cannot sample {self.number_of_paths} distinct items from {len(unique_routes)} unique items."
         picked_routes = self.rng.choice(unique_routes, size=self.number_of_paths, p=sampling_probabilities, replace=False)
-        return picked_routes.tolist()
-    
-    
-    def _paths_to_df(self, routes: dict) -> pd.DataFrame:
-        # Initialize an empty DataFrame with the required columns
-        columns = [kc.ORIGINS, kc.DESTINATIONS, kc.PATH, kc.FREE_FLOW_TIME]
-        paths_df = pd.DataFrame(columns=columns)
-        # Iterate through the routes dictionary
-        for (origin_idx, dest_idx), paths in routes.items():
-            # Retrieve node names of the OD
-            origin_name = self.origins[origin_idx]
-            dest_name = self.destinations[dest_idx]
-            for path in paths:
-                # Convert the path to a string format
-                path_as_str = list_to_string(path, ",")
-                # Calculate the free-flow travel time for the path
-                free_flow = calculate_free_flow_time(path, self.network)
-                # Append the row to the DataFrame
-                paths_df.loc[len(paths_df.index)] = [origin_name, dest_name, path_as_str, free_flow]
-        return paths_df
+        picked_routes = [tuple(route.split(",")) for route in picked_routes]
+        return picked_routes
 
 
     def _logit(self, options: list, node_potentials: dict) -> str:
         # If a node does not have a potential, it is a dead end, so we assign an infinite potential
         numerators = [np.exp(self.beta * node_potentials.get(option, float("inf"))) for option in options]
         utilities = [numerator/sum(numerators) for numerator in numerators]
-        return self.rng.choice(options, p=utilities)
+        choice = str(self.rng.choice(options, p=utilities))
+        return choice

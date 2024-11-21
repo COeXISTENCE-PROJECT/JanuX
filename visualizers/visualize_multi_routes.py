@@ -28,6 +28,7 @@ def show_multi_routes(nod_file_path: str,
 
 
 def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str, destination_edge: str,
+                   show: bool = True,
                    save_file_path: str | None = None,
                    title: str = "Path Visualization",
                    cmap_names: list[str] = ['Reds', 'Blues', 'Greens', 'Purples', 'Oranges'],
@@ -83,13 +84,16 @@ def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str,
         plt.ylim(ycrop)
     
     # Set the title and show the plot
-    plt.title(title)
+    plt.title(title) 
+    fig = plt.gcf()   # Get the current figure
+    fig.canvas.manager.set_window_title(title)
     
     # Save the plot if requested
     if save_file_path is not None:
-        plt.savefig(save_file_path)
+        plt.savefig(save_file_path, bbox_inches='tight')
         
-    plt.show()
+    if show:
+        plt.show()
     
 
 def _parse_network_files(nod_file, edg_file):

@@ -28,10 +28,10 @@ def read_json(file_path):    # Read json file, return as dict
     return file_data
 
 
-def list_to_string(from_list, separator=', '):
+def iterable_to_string(iterable_in, separator=', '):
     out_str = ""
     first_time = True
-    for item in from_list:
+    for item in iterable_in:
         if first_time:
             out_str = str(item)
             first_time = False

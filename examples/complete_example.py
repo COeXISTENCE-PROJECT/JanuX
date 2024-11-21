@@ -7,6 +7,23 @@ from graph_builders import build_digraph
 from path_generators import basic_generator
 from visualizers import show_multi_routes
 
+"""
+This script demonstrates generating paths in a transportation network and visualizing the results using predefined 
+parameters for origins, destinations, and network files.
+
+Workflow:
+1. The directed graph (`network`) is constructed using `build_digraph` and the provided network files.
+2. Paths are generated between all specified origin-destination pairs using the `basic_generator` function.
+3. If `show_routes` is set to `True`:
+   - For each origin-destination pair, the corresponding paths are visualized and saved as PNG files in the `examples/figures/` directory.
+   - The visualization uses cropped network boundaries defined by `xcrop` and `ycrop`.
+4. The generated routes are saved to a CSV file at the location specified by `routes_csv_path`.
+
+Output:
+- Visualizations of paths saved as PNG files in `examples/figures/`.
+- A CSV file containing the generated paths with details such as origin, destination, path and free-flow travel time.
+"""
+
 ##################### PARAMS ############################
 
 origins = ["441496282#0", "154551772#1"]

@@ -8,6 +8,26 @@ from path_generators import calculate_free_flow_time
 from path_generators import heuristic_generator
 from visualizers import show_multi_routes
 
+"""
+This script demonstrates generating paths in a transportation network using heuristic-based selection and visualizing the results.
+
+Heuristicsv used in this example:
+- `heuristic1`: Minimizes the total number of edges across all paths.
+- `heuristic2`: Minimizes the total free-flow travel time across all paths.
+- `heuristic3`: Minimizes the maximum edge overlap between paths to encourage diversity.
+
+Workflow:
+1. The network is constructed using `build_digraph` from the provided connection, edge, and route files.
+2. Paths are generated using the `heuristic_generator` with the defined heuristics and weights.
+3. If `show_routes` is enabled:
+   - Each origin-destination pair's routes are visualized and saved as images in the `examples/figures/` directory.
+4. The generated routes are saved to a CSV file in the specified `routes_csv_path`.
+
+Output:
+- Visualizations of routes saved as PNG files in `examples/figures/`.
+- A CSV file containing the generated routes with details such as origin, destination, and path.
+"""
+
 ##################### PARAMS ############################
 
 origins = ["441496282#0", "154551772#1"]

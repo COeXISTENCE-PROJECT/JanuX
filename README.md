@@ -1,5 +1,4 @@
 # JanuX
-### See if it sticks
 
 <img src="graphics/janux.svg" alt="JanuX Logo" align="right" width="200">
 
@@ -10,3 +9,7 @@
 **JanuX** is not a Roman god, but it is a robust yet simple tool for generating a set of path options in directed graphs. It is designed for efficient routing or creating path options for custom requirements.
 
 ---
+
+| ![Image1](graphics/gallery/a.png) | ![Image2](graphics/gallery/b.png) |
+|------------------------|-----------------------|
+| ![Image3](graphics/gallery/c.png) | ![Image4](graphics/gallery/d.png) |

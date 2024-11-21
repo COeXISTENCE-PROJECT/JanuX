@@ -30,11 +30,6 @@ def build_digraph(connection_file: str, edge_file: str, route_file: str) -> nx.D
     Raises:
         FileNotFoundError: If any of the input files are not found.
         ValueError: If required data is missing in the input files.
-
-    Example:
-        >>> network = generate_network("connections.xml", "edges.xml", "routes.xml")
-        >>> type(network)
-        <class 'networkx.DiGraph'>
     """
     try:
         # Process connections
