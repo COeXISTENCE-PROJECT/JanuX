@@ -4,6 +4,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
 import pandas as pd
+import time
 
 from graph_builders import build_digraph
 from path_generators import basic_generator
@@ -62,6 +63,7 @@ kwargs = {
 ########################################################
     
 if __name__ == "__main__":
+    start_time = time.time()
     # Generate network and paths
     network = build_digraph(connection_file_path, edge_file_path, route_file_path)
     routes = list()
@@ -81,6 +83,7 @@ if __name__ == "__main__":
         
     # Merge routes
     routes = pd.DataFrame(routes)
+    print(f"Time taken: {time.time() - start_time:.2f} seconds")
     
     if show_routes:
         # Visualize paths

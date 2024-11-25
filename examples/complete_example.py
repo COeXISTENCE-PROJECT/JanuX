@@ -3,6 +3,8 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
+import time
+
 from graph_builders import build_digraph
 from path_generators import basic_generator
 from utils import read_json
@@ -48,15 +50,18 @@ kwargs = {
     "random_seed": 42,
     "num_samples": 100,
     "number_of_paths": 3,
-    "beta": -2
+    "beta": -2,
+    "max_path_length": None
 }
 
 ########################################################
     
 if __name__ == "__main__":
+    start_time = time.time()
     # Generate network and paths
     network = build_digraph(connection_file_path, edge_file_path, route_file_path)
     routes = basic_generator(network, origins, destinations, **kwargs)
+    print(f"Time taken: {time.time() - start_time:.2f} seconds")
     
     if show_routes:
         # Visualize paths
