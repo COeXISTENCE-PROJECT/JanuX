@@ -21,16 +21,18 @@ Output:
 
 ##################### PARAMS ############################
 
+network_name = "ingolstadt"
+
 # File paths
-nod_file_path = 'examples/network_files/csomor1.nod.xml'
-edg_file_path = 'examples/network_files/csomor1.edg.xml'
+nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
+edg_file_path = f"examples/network_files/{network_name}/{network_name}.edg.xml"
 
 # Paths
-path = ['154551772#1', '115604051#0', '-115602933#5', '-115602933#4', '115604048#1', '279952229#3', \
-    '279952229#4', '279952229#5', '115604057#1', '-115604057#1']
+path = "-24634511,24634510#1,24634510#6,204588664#0,-23436553#2,-23436553#1,-22690205#1,233675413#4,-25145011#2,-25145012#5,22716069#2,-653473569#1,-653473569#0,-653473568#1,-653473568#0,-18813598#8,-18813598#7,-18813598#6,-18813598#1,-201963522#9,-201963522#5,-201963522#4,-173177776#1"
+path = path.split(",")
 
 # Origin and destination
-origin, destination = '154551772#1', '-115604057#1'
+origin, destination = path[0], path[-1]
 
 # Figure crop ranges for the visualization
 autocrop = True

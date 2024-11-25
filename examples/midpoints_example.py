@@ -8,7 +8,6 @@ import pandas as pd
 from graph_builders import build_digraph
 from path_generators import basic_generator
 from utils import iterable_to_string
-from utils import read_json
 from visualizers import show_multi_routes
 
 
@@ -38,15 +37,15 @@ edge_file_path = f"examples/network_files/{network_name}/{network_name}.edg.xml"
 route_file_path = f"examples/network_files/{network_name}/{network_name}.rou.xml"
 nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
 
-ods = read_json(f"examples/network_files/{network_name}/ods.json")
-origins = ods["origins"]
-destinations = ods["destinations"]
+origins = ["441496282#0"]
+destinations = ["-115604057#1"]
 
 #mid_points = ["-115602933#4", "441496282#4", "279952229#4"]
-#mid_points = ["279952229#4", "-115604047#2", "115604047#1"]
-mid_points = ["-115602933#0", "279952229#5", "-819269916#3"]
+mid_points = ["279952229#4", "-115604047#2", "115604047#1"]
+#mid_points = ["-115602933#0", "279952229#5", "-819269916#3"]
 
 autocrop = True
+# or
 xcrop = (1500, 3000)
 ycrop = (300, 1200)
 

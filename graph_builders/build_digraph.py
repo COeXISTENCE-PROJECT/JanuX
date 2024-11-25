@@ -43,6 +43,7 @@ def build_digraph(connection_file: str, edge_file: str, route_file: str) -> nx.D
 
         # Merge all DataFrames and calculate travel times
         network_df = _merge_network_data(connections_df, edge_attributes_df, route_attributes_df)
+        network_df = network_df.mask(network_df.astype(object).eq('None')).dropna()
 
         # Create and return directed graph
         traffic_network_graph = nx.from_pandas_edgelist(
