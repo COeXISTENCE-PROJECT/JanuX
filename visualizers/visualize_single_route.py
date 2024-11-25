@@ -19,59 +19,56 @@ def show_single_route(nod_file_path: str,
                       destination: str, 
                       **kwargs):
     """
-    Visualizes a single route on a transportation network.
-
-    This function parses the network's node and edge files, constructs a graph 
-    representation of the network, and visualizes a specific route along with 
-    its origin and destination edges.
+    Displays a visualization of a single route on a graph derived from given node and edge files.
 
     Parameters:
-    ----------
+    -----------
     nod_file_path : str
-        Path to the network's node (.nod.xml) file. This file should define node IDs 
-        and their coordinates (x, y).
+        Path to the node file containing node definitions in XML format.
     edg_file_path : str
-        Path to the network's edge (.edg.xml) file. This file should define edge IDs 
-        and their corresponding source and target nodes.
+        Path to the edge file containing edge definitions in XML format.
     path : list[str]
-        A list of edge IDs representing the route to be visualized.
+        A list of edge IDs that represent the route to be visualized.
     origin : str
-        The edge ID representing the starting point of the route.
+        The edge ID for the origin of the route.
     destination : str
-        The edge ID representing the endpoint of the route.
+        The edge ID for the destination of the route.
     **kwargs : dict
-        Additional keyword arguments to customize the visualization. These arguments 
-        are passed directly to the `visualize_path` function.
+        Additional keyword arguments passed to `visualize_path` for customization.
 
-    Keyword Arguments:
-    ------------------
-    show : bool, optional
-        If True, the visualization will be displayed (default is True).
-    save_file_path : str, optional
-        Path to save the visualization image. If None, the image is not saved.
-    title : str, optional
-        Title of the visualization plot (default is "Path Visualization").
-    cmap_name : str, optional
-        Name of the colormap used to color the route (default is "Reds").
-    offset : float, optional
-        Vertical offset applied to the path edges for better visibility (default is 5.0).
-    fig_width : int, optional
-        Width of the figure in inches (default is 8).
-    autocrop : bool, optional
-        If True, the visualization is cropped to the route's extent (default is True). Overrides `xcrop` and `ycrop` if `True`.
-    xcrop : tuple[float, float], optional
-        Manual x-axis cropping range (default is None).
-    ycrop : tuple[float, float], optional
-        Manual y-axis cropping range (default is None).
-    crop_margin : float, optional
-        Margin added to the autocropping range (default is 10).
+    Keyword Arguments (`kwargs`):
+    -----------------------------
+    show : bool, default=True
+        Whether to display the plot.
+    save_file_path : str | None, default=None
+        File path to save the generated plot as an image. If None, the plot is not saved.
+    title : str, default="Path Visualization"
+        Title of the plot window and the saved figure.
+    cmap_name : str, default="Reds"
+        Name of the colormap used for coloring the path (sequential).
+    offset : float, default=0
+        Shift to be applied to every edge, can be used to not obstruct the original edge.
+    fig_size : tuple[int], default=(12, 8)
+        Size of the figure (width, height) in inches.
+    autocrop : bool, default=True
+        Whether to crop the figure to focus on the path and reduce unnecessary whitespace.
+    autocrop_margin : float, default=10
+        Margin in data units to add around the autocropped view.
+    xcrop : tuple[float, float] | None, default=None
+        Fixed x-axis range for the plot. Overriden by `autocrop`.
+    ycrop : tuple[float, float] | None, default=None
+        Fixed y-axis range for the plot. Overriden by `autocrop`.
+    node_size : int, default=10
+        Size of the nodes in the plot.
+    node_color : str, default='lightblue'
+        Color of the nodes in the plot.
+    path_width : int, default=5
+        Width of the edges that represent the path in the plot.
 
     Returns:
-    -------
+    --------
     None
-        The function generates a visualization, which is displayed or saved based on 
-        the provided keyword arguments.
-    )
+        Displays the visualization of the route and optionally saves it to a file.
     """
     # Parse the network
     nodes, edges = _parse_network_files(nod_file_path, edg_file_path)
@@ -87,18 +84,24 @@ def visualize_path(graph: nx.DiGraph, path: list[str], origin_edge: str, destina
                    save_file_path: str | None = None,
                    title: str = "Path Visualization",
                    cmap_name: str = "Reds",
-                   offset: float = 5.0,
-                   fig_width: tuple[int] = 8,
+                   offset: float = 0,
+                   fig_size: tuple[int] = (12, 8),
                    autocrop: bool = True,
+                   autocrop_margin: float = 10,
                    xcrop: tuple[float, float] | None = None,
                    ycrop: tuple[float, float] | None = None,
-                   crop_margin: float = 10) -> None:
+                   node_size: int = 10,
+                   node_color: str = 'lightblue',
+                   path_width: int = 5) -> None:
+    
+    # Initilize the figure
+    plt.figure(figsize=fig_size)
     
     # Get node positions
     node_positions = nx.get_node_attributes(graph, 'pos')
     
     # Draw the full network
-    nx.draw(graph, node_positions, node_size=10, node_color='lightblue', style='--', edge_color='gray', arrows=False)
+    nx.draw(graph, node_positions, node_size=node_size, node_color=node_color, style='--', edge_color='gray', arrows=False)
     
     # Highlight OD edges
     origin_coords, dest_coords = None, None
@@ -108,7 +111,7 @@ def visualize_path(graph: nx.DiGraph, path: list[str], origin_edge: str, destina
         elif edge_id['edge_id'] == destination_edge:
             dest_coords = (source_node, target_node)
     try:
-        nx.draw_networkx_edges(graph, node_positions, edgelist=[origin_coords, dest_coords], edge_color=["black", "black"], width=5)
+        nx.draw_networkx_edges(graph, node_positions, edgelist=[origin_coords, dest_coords], edge_color=["black", "black"], width=path_width)
     except:
         raise ValueError("Origin or destination edge not found in the graph.")
     
@@ -128,7 +131,7 @@ def visualize_path(graph: nx.DiGraph, path: list[str], origin_edge: str, destina
         color = colors[path.index(edge_id)]
         # Draw if it's not origin or destination
         if edge_id not in (origin_edge, destination_edge):
-            nx.draw_networkx_edges(graph, new_pos, edgelist=[(source_node, target_node)], edge_color=[color], width=3)
+            nx.draw_networkx_edges(graph, new_pos, edgelist=[(source_node, target_node)], edge_color=[color], width=path_width)
         
         if autocrop:
             # Update the cropping limits
@@ -137,24 +140,39 @@ def visualize_path(graph: nx.DiGraph, path: list[str], origin_edge: str, destina
             y_max = max(y_max, new_pos[source_node][1], new_pos[target_node][1])
             y_min = min(y_min, new_pos[source_node][1], new_pos[target_node][1])
         
-    # Crop the figure if requested    
+# Crop the figure if requested
     if autocrop:
-        x_range = (x_min - crop_margin, x_max + crop_margin)
-        y_range = (y_min - crop_margin, y_max + crop_margin)
-        plt.xlim(x_range)
-        plt.ylim(y_range)
-        # Set figsize
-        fig = plt.gcf()
-        fig.set_size_inches(fig_width, fig_width * (y_range[1] - y_range[0]) / (x_range[1] - x_range[0]))
-    else:
+        # Determine the aspect ratio of the ranges
+        x_range_length = x_max - x_min
+        y_range_length = y_max - y_min
+        cropped_aspect_ratio = y_range_length / x_range_length
+        
+        fig_width, fig_height = fig_size  # Base figure size
+        fig_aspect_ratio = fig_height / fig_width
+
+        if cropped_aspect_ratio > fig_aspect_ratio:
+            # Cropped aspect ratio is taller than the base aspect ratio
+            x_range_length_new = (cropped_aspect_ratio / fig_aspect_ratio) * x_range_length
+            difference = x_range_length_new - x_range_length
+            # Expand the image on x axis
+            x_max += difference / 2
+            x_min -= difference / 2
+        else:
+            # Cropped aspect ratio is wider than the base aspect ratio
+            y_range_length_new = (fig_aspect_ratio / cropped_aspect_ratio) * y_range_length
+            difference = y_range_length_new - y_range_length
+            # Expand the image on y axis
+            y_max += difference / 2
+            y_min -= difference / 2
+
+        # Set plot limits
+        plt.xlim(x_min-autocrop_margin, x_max+autocrop_margin)
+        plt.ylim(y_min-autocrop_margin, y_max+autocrop_margin)
+    else:    
         if xcrop is not None:
             plt.xlim(xcrop)
         if ycrop is not None:
             plt.ylim(ycrop)
-        if xcrop is not None and ycrop is not None:
-            # Set figsize
-            fig = plt.gcf()
-            fig.set_size_inches(fig_width, fig_width * (ycrop[1] - ycrop[0]) / (xcrop[1] - xcrop[0]))
     
     # Set the title and show the plot
     plt.title(title) 
