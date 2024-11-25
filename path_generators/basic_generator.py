@@ -73,6 +73,8 @@ class BasicPathGenerator(PathGenerator):
         self.weight = params[kc.WEIGHT]
         self.num_samples = params[kc.NUM_SAMPLES]
         self.max_path_length = params[kc.MAX_PATH_LENGTH]
+        if self.max_path_length is None:
+            self.max_path_length = float("inf")
         
         # Set random seed if provided
         self.random_seed = params.get(kc.RANDOM_SEED, None)
