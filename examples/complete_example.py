@@ -5,6 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
 from graph_builders import build_digraph
 from path_generators import basic_generator
+from utils import read_json
 from visualizers import show_multi_routes
 
 """
@@ -26,13 +27,15 @@ Output:
 
 ##################### PARAMS ############################
 
-origins = ["441496282#0", "154551772#1"]
-destinations = ["-115604057#1", "-279952229#4"]
+network_name = "csomor"
+connection_file_path = f"examples/network_files/{network_name}/{network_name}.con.xml"
+edge_file_path = f"examples/network_files/{network_name}/{network_name}.edg.xml"
+route_file_path = f"examples/network_files/{network_name}/{network_name}.rou.xml"
+nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
 
-connection_file_path = "examples/network_files/csomor1.con.xml"
-edge_file_path = "examples/network_files/csomor1.edg.xml"
-route_file_path = "examples/network_files/csomor1.rou.xml"
-nod_file_path = "examples/network_files/csomor1.nod.xml"
+ods = read_json(f"examples/network_files/{network_name}/ods.json")
+origins = ods["origins"]
+destinations = ods["destinations"]
 
 autocrop = True
 xcrop = (1500, 3000)
@@ -43,9 +46,9 @@ routes_csv_path = "examples/results/routes.csv"
 
 kwargs = {
     "random_seed": 42,
-    "num_samples": 200,
+    "num_samples": 100,
     "number_of_paths": 3,
-    "beta": -3
+    "beta": -2
 }
 
 ########################################################
