@@ -103,11 +103,13 @@ class BasicPathGenerator(PathGenerator):
 
         Raises:
             AssertionError: If the number of samples is less than the number of paths 
-                            to be generated or if the maximum path length is not positive.
+                            to be generated, or if the maximum path length is not positive,
+                            or beta is non-negative.
         """
         assert self.num_samples >= self.number_of_paths, f"Number of samples ({self.num_samples}) should be \
             at least equal to the number of routes ({self.number_of_paths})"
         assert self.max_path_length > 0, f"Maximum path length should be greater than 0"
+        assert self.beta < 0, f"Beta should be less than 0"
         
         routes = dict()   # Tuple<od_id, dest_id> : List<routes>
         for dest_idx, dest_name in self.destinations.items():

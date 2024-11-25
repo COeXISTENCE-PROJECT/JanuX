@@ -91,9 +91,11 @@ class HeuristicPathGenerator(BasicPathGenerator):
             AssertionError: 
                 - If the number of samples is less than the number of desired routes to generate.
                 - If the maximum path length is not greater than zero.
+                - If the beta value is non-negative.
         """
         assert self.num_samples >= self.number_of_paths, f"Number of samples ({self.num_samples}) should be at least equal to the number of routes ({self.number_of_paths})"
         assert self.max_path_length > 0, f"Maximum path length should be greater than 0"
+        assert self.beta < 0, f"Beta should be less than 0"
         
         routes = dict()   # Tuple<od_id, dest_id> : List<routes>
         for dest_idx, dest_name in self.destinations.items():
