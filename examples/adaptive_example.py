@@ -3,11 +3,15 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
+import random
 import time
 
-from graph_builders import build_digraph
+from collections import Counter
+
 from path_generators import adaptive_generator
+from graph_builders import build_digraph
 from utils import read_json
+from visualizers import show_edge_attributes
 from visualizers import show_multi_routes
 
 """
@@ -46,6 +50,9 @@ ycrop = (300, 1200)
 show_routes = True
 routes_csv_path = "examples/results/routes.csv"
 
+show_congestion = True
+save_figure_to = 'examples/figures/congestion_visualization.png'
+
 kwargs = {
     "random_seed": 42,
     "num_samples": 100,
@@ -76,3 +83,28 @@ if __name__ == "__main__":
                     xcrop=xcrop, ycrop=ycrop, save_file_path=save_path, title=f"Origin: {origin_idx}({origin}), Destination: {dest_idx}({destination})")
         
     routes.to_csv(routes_csv_path, index=False)
+    
+    
+    if show_congestion:
+        routes = routes["path"].values
+
+        all_edges = list()
+        for route in routes:
+            all_edges += route.split(",")
+            
+        counts = Counter(all_edges)
+        # normalize counts between 0-1
+        max_count = max(counts.values())
+        counts = {edge: count / max_count for edge, count in counts.items()}
+
+        # Count based with some noise
+        congestion_dict = {edge: min(counts[edge]+random.random()/5, 1.0) for edge in counts.keys()}
+        
+        show_edge_attributes(
+            nod_file_path,
+            edge_file_path,
+            congestion_dict,
+            save_file_path=save_figure_to,
+        )
+    
+    
