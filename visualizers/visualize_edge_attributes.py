@@ -7,7 +7,9 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-import xml.etree.ElementTree as ET
+
+from visualizers.visualization_utils import create_graph
+from visualizers.visualization_utils import parse_network_files
 
 
 #################################################
@@ -49,8 +51,8 @@ def show_edge_attributes(nod_file_path: str,
         Displays the visualization of the congestion levels and optionally saves it to a file.
     """
     # Parse the network
-    nodes, edges = _parse_network_files(nod_file_path, edg_file_path)
-    graph = _create_graph(nodes, edges)
+    nodes, edges = parse_network_files(nod_file_path, edg_file_path)
+    graph = create_graph(nodes, edges)
     # Visualize congestion
     visualize_congestion(graph, congestion_dict, **kwargs)
 
@@ -142,46 +144,13 @@ def visualize_congestion(graph: nx.DiGraph, congestion_dict: dict,
     
     # Set the title and show the plot
     ax.set_title(title)
-    fig.canvas.manager.set_window_title(title)
     
     # Save the plot if requested
     if save_file_path is not None:
         plt.savefig(save_file_path, bbox_inches='tight', dpi=300)
         
     if show:
+        fig.canvas.manager.set_window_title(title)
         plt.show()
-
-
-#################################################
-
-def _parse_network_files(nod_file, edg_file):
-    """
-    Parses nodes and edges from the given network files.
-    """
-    # Parse nodes
-    node_tree = ET.parse(nod_file)
-    nodes = {}
-    for node in node_tree.findall("node"):
-        node_id = node.get("id")
-        x, y = float(node.get("x")), float(node.get("y"))
-        nodes[node_id] = (x, y)
-    # Parse edges
-    edge_tree = ET.parse(edg_file)
-    edges = []
-    for edge in edge_tree.findall("edge"):
-        edge_id = edge.get("id")
-        from_node, to_node = edge.get("from"), edge.get("to")
-        edges.append((from_node, to_node, edge_id))
-    return nodes, edges
-
-
-def _create_graph(nodes, edges):
-    """
-    Creates a directed graph from nodes and edges.
-    """
-    graph = nx.DiGraph()
-    for node_id, coords in nodes.items():
-        graph.add_node(node_id, pos=coords)
-    for from_node, to_node, edge_id in edges:
-        graph.add_edge(from_node, to_node, edge_id=edge_id)
-    return graph
+        
+    plt.close()

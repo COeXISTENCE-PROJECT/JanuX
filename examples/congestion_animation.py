@@ -7,10 +7,8 @@ import pandas as pd
 import random
 
 from collections import Counter
-from matplotlib import pyplot as plt
-from PIL import Image
 
-from visualizers import show_edge_attributes
+from visualizers import animate_edge_attributes
 
 ##################### PARAMS ############################
 
@@ -19,22 +17,19 @@ network_name = "ingolstadt"
 nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
 edg_file_path = f"examples/network_files/{network_name}/{network_name}.edg.xml"
 
-num_frames = 50
+num_frames = 100
 frame_duration = 200
 
 read_routes_from = "examples/results/routes.csv"
-save_figure_path = "examples/figures/congestions/"
-save_gif_to = "examples/figures/congestion_visualization.gif"
+save_frames_path = "examples/figures/congestions/"
+save_gif_to = "examples/figures/congestion_animation.gif"
 
 ########################################################
 
 if __name__ == "__main__":
     
-    # Make sure path save_figure_path exists
-    if not os.path.exists(save_figure_path):
-        os.makedirs(save_figure_path)
-    
-    # mkae sure you have paths saved for Ingolstadt
+    ##################### Create mock edge attributes ############################
+    # !!! For this example, mkae sure you have paths saved for Ingolstadt !!!
     routes = pd.read_csv(read_routes_from)
     routes = routes["path"].values
 
@@ -54,28 +49,11 @@ if __name__ == "__main__":
         congestion_dict = {edge: min(og_congestion_dict[edge]+random.random()/4, 1.0) for edge in og_congestion_dict.keys()}
         congestion_dicts.append(congestion_dict)
         
-    frame_paths = list()
-    for idx, congestion_dict in enumerate(congestion_dicts):
-        print(f"\rGenerating frame {idx+1}/{num_frames}", end="")
-        save_figure_to = os.path.join(save_figure_path, f'congestion_visualization_{idx}.png')
-        frame_paths.append(save_figure_to)
-        show_edge_attributes(
-            nod_file_path,
-            edg_file_path,
-            congestion_dict,
-            save_file_path=save_figure_to,
-            show=False,
-            title=f"Congestion Visualization (Frame {idx+1}/{num_frames})"
-        )
-        plt.close()
+    #################### Animate ############################ 
     
-    # Create GIF
-    print("\nCreating GIF...")
-    frames = [Image.open(frame) for frame in frame_paths]
-    frames[0].save(
-        save_gif_to,
-        save_all=True,
-        append_images=frames[1:],
-        duration=frame_duration,
-        loop=0
-    )
+    animate_edge_attributes(nod_file_path,
+                            edg_file_path,
+                            congestion_dicts,
+                            save_frames_dir=save_frames_path,
+                            save_gif_to=save_gif_to,
+                            frame_duration=frame_duration)
