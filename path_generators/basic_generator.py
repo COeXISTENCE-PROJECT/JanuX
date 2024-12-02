@@ -113,8 +113,7 @@ class BasicPathGenerator(PathGenerator):
                 sampled_routes = list()   # num_samples number of routes
                 while (len(sampled_routes) < self.num_samples) or (len(set(sampled_routes)) < self.number_of_paths):
                     path = self._sample_single_route(origin_name, dest_name, node_potentials)
-                    if not path is None:
-                        sampled_routes.append(tuple(path))
+                    sampled_routes.append(tuple(path))
                 logging.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
                 routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
                 logging.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
