@@ -13,42 +13,45 @@ from typing import Callable
 
 from path_generators import calculate_free_flow_time
 from path_generators import paths_to_df
-from path_generators.basic_generator import BasicPathGenerator
+from path_generators.extended_generator import ExtendedPathGenerator
 from utils import iterable_to_string
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 
-class HeuristicPathGenerator(BasicPathGenerator):
+class HeuristicPathGenerator(ExtendedPathGenerator):
+    
     """
-    A path generator that incorporates heuristic-based scoring to select optimal paths
-    between origin-destination pairs in a directed graph network.
+    Generates paths in a transportation network using heuristic-based scoring.
 
-    The HeuristicPathGenerator extends the functionality of the BasicPathGenerator
-    by using heuristics and corresponding weights to evaluate and select paths from
-    a set of sampled routes. It enables customizable scoring and deterministic selection
-    of paths based on user-defined heuristics.
-    Route generations can be made reproducible by setting a seed.
+    This class extends the functionality of `ExtendedPathGenerator` by incorporating heuristics 
+    to evaluate and select optimal paths from a set of sampled routes. Heuristics are customizable 
+    and allow the user to guide the selection process based on custom criteria.
+
+    Args:
+        network (nx.DiGraph): The transportation network represented as a directed graph.
+        origins (list[str]): A list of origin nodes in the network.
+        destinations (list[str]): A list of destination nodes in the network.
+        heuristics (list[Callable]): A list of heuristic functions to evaluate route groups. 
+                                     Each heuristic must accept `number_of_paths + 1` arguments 
+                                     (paths and the network) and return a numerical score.
+        heur_weights (list[float]): A list of weights for the heuristics. Must match the number 
+                                    of heuristics provided.
+        **kwargs: Additional parameters for route generation, including those inherited from 
+                  `ExtendedPathGenerator`.
 
     Attributes:
-        network (nx.DiGraph): The directed graph representing the network on which routes are generated.
-        origins (list[str]): A list of origin node names in the network.
-        destinations (list[str]): A list of destination node names in the network.
-        heuristics (list[Callable]): A list of heuristic functions used to evaluate route groups.
-            Each heuristic must be callable, accept `number_of_paths + 1` arguments (routes and the network),
-            and return a numerical score deterministically.
-        heur_weights (list[float]): A list of weights corresponding to each heuristic, determining
-            the influence of each heuristic on the overall score.
+        heuristics (list[Callable]): List of heuristic functions used to evaluate route groups.
+        heur_weights (list[float]): Weights assigned to each heuristic during route evaluation.
 
-    Methods (in addition to `BasicPathGenerator`):
-        generate_routes() -> pd.DataFrame:
-            Generates routes for all origin-destination pairs using heuristic-based selection
-            and returns them in a structured DataFrame.
-        _pick_routes_from_samples(sampled_routes: list[tuple]) -> list[tuple]:
-            Selects a group of routes from a set of sampled routes based on heuristic scores.
-        _validate_heuristics(sampled_routes: list[tuple]) -> None:
-            Validates the heuristics to ensure they are callable, deterministic, and
-            conform to the expected input and output structure.
+    Methods:
+        generate_routes(as_df=True): Generates routes between origin-destination pairs, scoring 
+                                     and selecting optimal paths using the provided heuristics.
+        _pick_routes_from_samples(sampled_routes): Selects the most optimal set of routes from 
+                                                   sampled routes using heuristic scoring.
+        _validate_heuristics(sampled_routes): Validates the heuristics to ensure they are callable, 
+                                              deterministic, and produce numerical results.
     """
+    
     def __init__(self, 
                  network: nx.DiGraph, 
                  origins: list[str], 
@@ -64,48 +67,35 @@ class HeuristicPathGenerator(BasicPathGenerator):
         
         
     def generate_routes(self, as_df: bool = True) -> pd.DataFrame | dict:
-        """
-        Generates routes for all origin-destination pairs using heuristic-based selection.
-
-        This method samples multiple paths between each origin-destination pair in the network.
-        A set number of paths is sampled using a logit-based probabilistic approach, and then
-        heuristics are applied to select the most optimal paths based on defined scoring criteria.
-
-        Steps:
-        1. For each destination node, calculate node potentials using shortest path lengths.
-        2. For each origin node, sample a specified number of unique paths to the destination.
-        3. Use heuristics and corresponding weights to evaluate and select the desired number of paths.
-        4. Convert the selected routes into a structured DataFrame, if requested.
-        
-        Args:
-            as_df (bool): A flag to determine whether to return the routes as a DataFrame or a dictionary.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing the generated routes with the following columns:
-                - `origins`: The origin node for each route.
-                - `destinations`: The destination node for each route.
-                - `path`: A string representation of the nodes in the route.
-                - `free_flow_time`: The travel time for the route under free-flow conditions.
-
-        Raises:
-            AssertionError: 
-                - If the number of samples is less than the number of desired routes to generate.
-                - If the maximum path length is not greater than zero.
-                - If the beta value is non-negative.
-        """
-        assert self.num_samples >= self.number_of_paths, f"Number of samples ({self.num_samples}) should be at least equal to the number of routes ({self.number_of_paths})"
+        assert self.num_samples >= self.number_of_paths, f"Number of samples ({self.num_samples}) should be \
+            at least equal to the number of routes ({self.number_of_paths})"
         assert self.max_path_length > 0, f"Maximum path length should be greater than 0"
         assert self.beta < 0, f"Beta should be less than 0"
+        assert self.shift_parameters_by > 0, f"Shift parameters should be greater than 0"
+        assert self.params_to_shift in ["beta", "max_path_length", "both", "none"], f"Invalid parameter to shift: {self.params_to_shift}. Choose from 'beta', 'max_path_length', 'both', 'none'."
         
         routes = dict()   # Tuple<od_id, dest_id> : List<routes>
         for dest_idx, dest_name in self.destinations.items():
             node_potentials = dict(nx.shortest_path_length(self.network, target=dest_name, weight=self.weight))
             for origin_idx, origin_name in self.origins.items():
                 sampled_routes = set()   # num_samples number of routes
+                iteration_count = 0
+                initial_beta, initial_max_path_len = self.beta, self.max_path_length
                 while (len(sampled_routes) < self.num_samples):
+                    
+                    # If this gets stuck, increase beta and max_path_length
+                    if (self.adaptive) and (iteration_count > self.tolerate_num_iterations):
+                        logging.warning(f"Exceeded tolerance for {origin_idx} -> {dest_idx}.")
+                        self.beta, self.max_path_length = self._shift_parameters(self.beta, self.max_path_length)
+                        logging.info(f"Beta: {self.beta}, Max Path Length: {self.max_path_length}")
+                        iteration_count = 0
+                        
                     path = self._sample_single_route(origin_name, dest_name, node_potentials)
                     if not path is None:
                         sampled_routes.add(tuple(path))
+                    iteration_count += 1
+                
+                self.beta, self.max_path_length = initial_beta, initial_max_path_len  
                 logging.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
                 sampled_routes = sorted(list(sampled_routes), key=lambda x: iterable_to_string(x))
                 routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
@@ -183,15 +173,6 @@ class HeuristicPathGenerator(BasicPathGenerator):
             assert heuristic(*sampled_routes[:self.number_of_paths], self.network) == heuristic(*sampled_routes[:self.number_of_paths], self.network), f"Each heuristic must be deterministic, but {heuristic.__name__} is not."
         assert len(self.heur_weights) == len(self.heuristics), f"Number of heuristic weights does not match with number of heuristics. ({len(self.heur_weights)} and {len(self.heuristics)})"
         
-        
-        
-    def check_od_integrity(self):
-        super().check_od_integrity()
-        
     
     def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> list[str] | None:
         return super()._sample_single_route(origin, destination, node_potentials)
-    
-    
-    def _logit(self, options: list, node_potentials: dict) -> str:
-        return super()._logit(options, node_potentials)

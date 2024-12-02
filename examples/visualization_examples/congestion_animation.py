@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 
 import pandas as pd
 import random
@@ -10,26 +10,26 @@ from collections import Counter
 
 from visualizers import animate_edge_attributes
 
-##################### PARAMS ############################
-
-# File paths
-network_name = "ingolstadt"
-nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
-edg_file_path = f"examples/network_files/{network_name}/{network_name}.edg.xml"
-
-num_frames = 100
-frame_duration = 200
-
-read_routes_from = "examples/results/routes.csv"
-save_frames_path = "examples/figures/congestions/"
-save_gif_to = "examples/figures/congestion_animation.gif"
-
-########################################################
-
 if __name__ == "__main__":
     
+    ##################### PARAMS ############################
+
+    # File paths
+    network_name = "ingolstadt"
+    nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
+    edg_file_path = f"examples/network_files/{network_name}/{network_name}.edg.xml"
+
+    num_frames = 100
+    frame_duration = 200
+
+    read_routes_from = f"examples/results/{network_name}_routes.csv"
+    save_frames_path = f"examples/figures/{network_name}_congestions/"
+    save_gif_to = f"examples/figures/{network_name}_animation.gif"
+
+    ########################################################
+    
     ##################### Create mock edge attributes ############################
-    # !!! For this example, mkae sure you have paths saved for Ingolstadt !!!
+    ## !!! For this example, mkae sure you have paths saved for Ingolstadt !!! ##
     routes = pd.read_csv(read_routes_from)
     routes = routes["path"].values
 

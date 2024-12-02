@@ -11,28 +11,20 @@ def basic_generator(network: nx.DiGraph,
                     origins: list[str], 
                     destinations: list[str], 
                     **kwargs) -> pd.DataFrame:
-    """
-    Generates routes for a given network using the BasicPathGenerator.
-
-    This function initializes a BasicPathGenerator with the provided network, origins,
-    and destinations, along with additional optional parameters. It generates routes
-    for all specified origin-destination pairs and returns them in a structured DataFrame.
-    For more information on the BasicPathGenerator, refer to the class documentation.
-
-    Args:
-        network (nx.DiGraph): The directed graph representing the network.
-        origins (list[str]): A list of origin node names in the network.
-        destinations (list[str]): A list of destination node names in the network.
-        **kwargs: Additional arguments to customize the behavior of the BasicPathGenerator.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the generated routes with the following columns:
-            - `origins`: The origin node for each route.
-            - `destinations`: The destination node for each route.
-            - `path`: A string representation of the nodes in the route.
-            - `free_flow_time`: The travel time for the route under free-flow conditions.
-    """
     generator = BasicPathGenerator(network, origins, destinations, **kwargs)
+    return generator.generate_routes()
+
+###########################################################################
+
+######################### Extended Path Generator #########################
+
+from .extended_generator import ExtendedPathGenerator
+
+def extended_generator(network: nx.DiGraph,
+                       origins: list[str],
+                       destinations: list[str],
+                       **kwargs) -> pd.DataFrame:
+    generator = ExtendedPathGenerator(network, origins, destinations, **kwargs)
     return generator.generate_routes()
 
 ###########################################################################
@@ -47,66 +39,7 @@ def heuristic_generator(network: nx.DiGraph,
                               heuristics: list[Callable], 
                               heur_weights: list[float], 
                               **kwargs) -> pd.DataFrame:
-    """
-    Generates routes for a given network using the HeuristicPathGenerator.
-
-    This function initializes a HeuristicPathGenerator with the provided network, origins,
-    destinations, heuristics, and their respective weights. The generator uses heuristic-based
-    scoring to select the most optimal paths for each origin-destination pair. Additional
-    parameters can be provided to customize the path generation process.
-    For more information on the HeuristicPathGenerator, refer to the class documentation.
-
-    Args:
-        network (nx.DiGraph): The directed graph representing the network.
-        origins (list[str]): A list of origin node names in the network.
-        destinations (list[str]): A list of destination node names in the network.
-        heuristics (list[Callable]): A list of heuristic functions used to evaluate route groups.
-            Each function should be callable and accept the generated paths and network as inputs.
-        heur_weights (list[float]): A list of weights corresponding to each heuristic, defining
-            the influence of each heuristic on the overall score.
-        **kwargs: Additional arguments to customize the behavior of the HeuristicPathGenerator.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the generated routes with the following columns:
-            - `origins`: The origin node for each route.
-            - `destinations`: The destination node for each route.
-            - `path`: A string representation of the nodes in the route.
-            - `free_flow_time`: The travel time for the route under free-flow conditions.
-    """
     generator = HeuristicPathGenerator(network, origins, destinations, heuristics, heur_weights, **kwargs)
     return generator.generate_routes()
 
 ###########################################################################
-
-######################### Adaptive Path Generator ########################
-
-from .adaptive_generator import AdaptivePathGenerator
-
-def adaptive_generator(network: nx.DiGraph,
-                       origins: list[str],
-                       destinations: list[str],
-                       **kwargs) -> pd.DataFrame:
-    """
-    Generates routes for a given network using the AdaptivePathGenerator.
-
-    This function initializes an AdaptivePathGenerator with the provided network, origins,
-    and destinations, along with additional optional parameters. It dynamically adjusts
-    sampling parameters (e.g., beta and max_path_length) to ensure successful route generation
-    when standard sampling conditions are not sufficient. For more information on the 
-    AdaptivePathGenerator, refer to the class documentation.
-
-    Args:
-        network (nx.DiGraph): The directed graph representing the network.
-        origins (list[str]): A list of origin node names in the network.
-        destinations (list[str]): A list of destination node names in the network.
-        **kwargs: Additional arguments to customize the behavior of the AdaptivePathGenerator.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the generated routes with the following columns:
-            - `origins`: The origin node for each route.
-            - `destinations`: The destination node for each route.
-            - `path`: A string representation of the nodes in the route.
-            - `free_flow_time`: The travel time for the route under free-flow conditions.
-    """
-    generator = AdaptivePathGenerator(network, origins, destinations, **kwargs)
-    return generator.generate_routes()

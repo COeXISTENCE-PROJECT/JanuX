@@ -8,7 +8,6 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from keychain import Keychain as kc
 from path_generators import calculate_free_flow_time
 from path_generators import check_od_integrity
 from path_generators import paths_to_df
@@ -19,37 +18,31 @@ from utils import iterable_to_string
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 
 class BasicPathGenerator(PathGenerator):
-    """
-    A path generation class for creating and sampling routes in a directed graph network.
 
-    The BasicPathGenerator extends the PathGenerator base class to include functionality
-    for generating paths between origin-destination pairs in a network. It uses shortest paths,
-    sampling methods, and logit-based probabilistic models to select and generate routes.
-    Route generations can be made reproducible by setting a seed.
+    """
+    Generates paths in a transportation network based on given origins and destinations.
+
+    This class uses a probabilistic approach to sample routes between specified origins 
+    and destinations in a directed graph (network). The sampling is based on a logit model.
+
+    Args:
+        network (nx.DiGraph): The transportation network represented as a directed graph.
+        origins (list[str]): A list of origin nodes in the network.
+        destinations (list[str]): A list of destination nodes in the network.
+        **kwargs: Additional parameters to customize path generation. Overrides defaults 
+                  in `path_gen_params.json`.
 
     Attributes:
-        origins (dict): A dictionary mapping origin indices to their node names in the network.
-        destinations (dict): A dictionary mapping destination indices to their node names in the network.
-        number_of_paths (int): Number of distinct paths to generate for each origin-destination pair.
-        beta (float): Parameter controlling the sensitivity to node potentials in the logit model.
-        weight (str): Edge attribute used as the weight for calculating shortest paths.
-        num_samples (int): Number of paths to sample before selecting final paths.
-        max_path_length (int): Maximum allowed length for a generated path.
-        random_seed (int or None): Random seed for reproducibility in sampling.
-        rng (np.random.Generator): Random number generator for sampling.
-
-    Methods:
-        check_od_integrity():
-            Ensures that all origins and destinations are present in the network and are reachable.
-        generate_routes() -> pd.DataFrame:
-            Generates paths for all origin-destination pairs and returns them as a DataFrame.
-        _sample_single_route(origin: str, destination: str, node_potentials: dict) -> list[str] | None:
-            Samples a single path probabilistically from an origin to a destination.
-        _pick_routes_from_samples(sampled_routes: list[tuple]) -> list[tuple]:
-            Selects the desired number of paths from a set of sampled routes based on their frequencies.
-        _logit(options: list, node_potentials: dict) -> str:
-            Selects a node probabilistically based on logit probabilities using node potentials.
+        origins (dict): A mapping of origin indices to their names.
+        destinations (dict): A mapping of destination indices to their names.
+        number_of_paths (int): Number of unique paths to generate per origin-destination pair.
+        beta (float): Logit model parameter; controls sensitivity to potential differences.
+        weight (str): Edge attribute used as the cost or weight for shortest-path calculations.
+        num_samples (int): Number of routes to sample before selecting unique paths.
+        random_seed (int | None): Seed for reproducible random number generation.
+        rng (np.random.Generator): Random number generator instance.
     """
+
     def __init__(self, 
                  network: nx.DiGraph, 
                  origins: list[str], 
@@ -68,47 +61,49 @@ class BasicPathGenerator(PathGenerator):
         params.update(kwargs)
         
          # Get parameters
-        self.number_of_paths = params[kc.NUMBER_OF_PATHS]
-        self.beta = params[kc.BETA]
-        self.weight = params[kc.WEIGHT]
-        self.num_samples = params[kc.NUM_SAMPLES]
-        self.max_path_length = params[kc.MAX_PATH_LENGTH]
-        if self.max_path_length is None:
-            self.max_path_length = float("inf")
+        self.number_of_paths = params["number_of_paths"]
+        self.beta = params["beta"]
+        self.weight = params["weight"]
+        self.num_samples = params["num_samples"]
         
         # Set random seed if provided
-        self.random_seed = params.get(kc.RANDOM_SEED, None)
+        self.random_seed = params.get("random_seed", None)
         np.random.seed(self.random_seed)
         self.rng = np.random.default_rng(self.random_seed)
         
         
     def generate_routes(self, as_df: bool = True) -> pd.DataFrame | dict:
-        """
-        Generates paths for all origin-destination (OD) pairs in the network.
-
-        This method samples multiple paths between each origin and destination pair
-        using a probabilistic approach. It selects the desired number of unique routes
-        based on sampling probabilities, converts them into a structured format, 
-        and returns them as a DataFrame or a dictionary.
         
+        """
+        Generates routes between origin-destination pairs in the network.
+
+        This method samples a specified number of routes for each origin-destination pair 
+        using a probabilistic logit model and selects unique paths from the sampled routes. 
+        The results can be returned either as a DataFrame or a dictionary.
+
         Args:
-            as_df (bool): A flag to determine whether to return the routes as a DataFrame or a dictionary. 
+            as_df (bool): If True, the routes are returned as a pandas DataFrame. 
+                        If False, the routes are returned as a dictionary. 
+                        Defaults to True.
 
         Returns:
-            pd.DataFrame: A DataFrame containing the generated routes with the following columns:
-                - `origins`: The origin node for each route.
-                - `destinations`: The destination node for each route.
-                - `path`: A string representation of the nodes in the route.
-                - `free_flow_time`: The travel time for the route under free-flow conditions.
+            pd.DataFrame | dict: 
+                - A DataFrame containing the routes and associated metadata if `as_df` is True.
+                - A dictionary mapping (origin_id, destination_id) tuples to lists of selected 
+                routes if `as_df` is False.
 
         Raises:
-            AssertionError: If the number of samples is less than the number of paths 
-                            to be generated, or if the maximum path length is not positive,
-                            or beta is non-negative.
+            AssertionError: If `num_samples` is less than `number_of_paths`.
+            AssertionError: If `beta` is not less than 0.
+
+        Notes:
+            - Each route is represented as a list of node names.
+            - The sampling process ensures that the specified number of unique paths 
+            (`number_of_paths`) is selected for each origin-destination pair.
         """
+        
         assert self.num_samples >= self.number_of_paths, f"Number of samples ({self.num_samples}) should be \
             at least equal to the number of routes ({self.number_of_paths})"
-        assert self.max_path_length > 0, f"Maximum path length should be greater than 0"
         assert self.beta < 0, f"Beta should be less than 0"
         
         routes = dict()   # Tuple<od_id, dest_id> : List<routes>
@@ -132,40 +127,46 @@ class BasicPathGenerator(PathGenerator):
 
 
     def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> list[str] | None:
+        
         """
-        Samples a single path probabilistically from the origin to the destination.
+        Samples a single route between an origin and destination using a logit-based probabilistic model.
 
-        This method iteratively builds a path by selecting the next node from the neighbors
-        of the current node using a logit-based probabilistic model. The sampling process
-        ends if:
-        1. The destination is reached.
-        2. There are no valid next nodes to continue the path.
-        3. The maximum allowable path length is exceeded.
+        This method constructs a path iteratively by selecting the next node based on 
+        a logit model that uses node potentials as weights. The process stops when the 
+        destination is reached or no valid route exists.
 
         Args:
-            origin (str): The starting node of the path.
-            destination (str): The target node of the path.
-            node_potentials (dict): A dictionary mapping node names to their potentials,
-                                    used to calculate the selection probabilities.
+            origin (str): The starting node of the route.
+            destination (str): The target node of the route.
+            node_potentials (dict): A dictionary mapping nodes to their potentials, 
+                                    where potentials represent the "attractiveness" of a node 
+                                    as a step toward the destination.
 
         Returns:
-            list[str] | None: A list representing the nodes in the sampled path if successful,
-                            or None if a valid path could not be found.
+            list[str] | None: 
+                - A list of nodes representing the path from the origin to the destination 
+                if a route is successfully sampled.
+                - None if no valid route exists.
+
+        Notes:
+            - The method selects nodes probabilistically using a logit model, where the likelihood 
+            of choosing a node is proportional to the exponential of its potential scaled by beta.
+            - If the destination is a direct neighbor of the current node, the route is completed.
+            - If no valid options are available at any step, the route construction fails.
         """
+        
         path, current_node = list(), origin
         while True:
             path.append(current_node)
-            options = [node for node in sorted(self.network.neighbors(current_node)) if node not in path]
-            if   (destination in options):                  return path + [destination]
-            elif (not options) or (len(path) > self.max_path_length):     return None
-            else:       
-                try:            
-                    current_node = self._logit(options, node_potentials)
-                except:
-                    return None
+            options = sorted(self.network.neighbors(current_node))
+            if destination in options:
+                return path + [destination]
+            else:
+                current_node = self._logit(options, node_potentials)
     
     
     def _pick_routes_from_samples(self, sampled_routes: list[tuple]) -> list[tuple]:
+        
         """
         Selects the desired number of unique routes from a set of sampled routes.
 
@@ -185,6 +186,7 @@ class BasicPathGenerator(PathGenerator):
             AssertionError: If the number of paths to select exceeds the total number
                             of sampled routes or the number of unique routes.
         """
+        
         assert self.number_of_paths <= len(sampled_routes), f"Number of paths ({self.number_of_paths}) should be less than or equal to the number of sampled routes ({len(sampled_routes)})"
         assert self.number_of_paths > 0, f"Number of paths should be greater than 0"
         

@@ -3,5 +3,11 @@
 "beta" : -1.50,
 "weight" : "time",
 "num_samples" : 100,
-"max_path_length" : 200
+"max_path_length" : 200,
+"allow_loops" : false,
+
+"adaptive" : true,
+"tolerate_num_iterations" : 200,
+"shift_parameters_by" : 5,
+"params_to_shift" : "both"
 }
