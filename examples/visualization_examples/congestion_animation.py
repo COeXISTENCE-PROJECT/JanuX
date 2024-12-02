@@ -23,8 +23,10 @@ if __name__ == "__main__":
     frame_duration = 200
 
     read_routes_from = f"examples/results/{network_name}_routes.csv"
-    save_frames_path = f"examples/figures/{network_name}_congestions/"
-    save_gif_to = f"examples/figures/{network_name}_animation.gif"
+    save_figs_path = f"examples/figures/"
+    os.makedirs(save_figs_path, exist_ok=True)
+    save_frames_path = f"{save_figs_path}{network_name}_congestions/"
+    save_gif_to = f"{save_figs_path}{network_name}_animation.gif"
 
     ########################################################
     

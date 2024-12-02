@@ -42,7 +42,9 @@ if __name__ == "__main__":
     xcrop = (1500, 3000)
     ycrop = (300, 1200)
 
-    save_figure_to = f'examples/figures/{network_name}_single_path.png'
+    save_figs_path = f"examples/figures/"
+    os.makedirs(save_figs_path, exist_ok=True)
+    save_figure_to = f'{save_figs_path}{network_name}_single_path.png'
 
     ########################################################
     

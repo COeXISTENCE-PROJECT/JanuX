@@ -49,7 +49,9 @@ if __name__ == "__main__":
     # Count based with some noise
     congestion_dict = {edge: min(counts[edge]+random.random()/5, 1.0) for edge in counts.keys()}
 
-    save_figure_to = f'examples/figures/{network_name}_visualization.png'
+    save_figs_path = f"examples/figures/"
+    os.makedirs(save_figs_path, exist_ok=True)
+    save_figure_to = f'{save_figs_path}{network_name}_visualization.png'
 
     ########################################################
 
