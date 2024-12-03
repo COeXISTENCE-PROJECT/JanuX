@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+from typing import Union
+
 from janux.visualizers.visualization_utils import create_graph
 from janux.visualizers.visualization_utils import parse_network_files
 
@@ -61,7 +63,7 @@ def show_edge_attributes(nod_file_path: str,
 
 def visualize_congestion(graph: nx.DiGraph, congestion_dict: dict,
                          show: bool = True,
-                         save_file_path: str | None = None,
+                         save_file_path: Union[str, None] = None,
                          title: str = "Congestion Visualization",
                          cmap_name: str = "Reds",
                          autocrop: bool = True,

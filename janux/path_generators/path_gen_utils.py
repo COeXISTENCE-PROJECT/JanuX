@@ -5,6 +5,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), './'))
 import networkx as nx
 import pandas as pd
 
+from typing import Union
+
 from janux.utils import iterable_to_string
 
 
@@ -58,7 +60,7 @@ def check_od_integrity(network: nx.DiGraph, origins: list[str], destinations: li
 
 
 
-def paths_to_df(routes: dict, origins: dict, destinations: dict, free_flows: dict | None=None) -> pd.DataFrame:
+def paths_to_df(routes: dict, origins: dict, destinations: dict, free_flows: Union[dict, None]=None) -> pd.DataFrame:
     # Assert that `routes` and `free_flows` has the same structure
     if free_flows is not None:
         assert routes.keys() == free_flows.keys()

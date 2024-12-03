@@ -6,6 +6,8 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from typing import Tuple, Union
+
 from janux.visualizers.visualization_utils import create_graph
 from janux.visualizers.visualization_utils import get_colors
 from janux.visualizers.visualization_utils import parse_network_files
@@ -83,15 +85,15 @@ def show_single_route(nod_file_path: str,
 
 def visualize_path(graph: nx.DiGraph, path: list[str], origin_edge: str, destination_edge: str,
                    show: bool = True,
-                   save_file_path: str | None = None,
+                   save_file_path: Union[str, None] = None,
                    title: str = "Path Visualization",
                    cmap_name: str = "Reds",
                    offset: float = 0,
                    fig_size: tuple[int] = (12, 8),
                    autocrop: bool = True,
                    autocrop_margin: float = 10,
-                   xcrop: tuple[float, float] | None = None,
-                   ycrop: tuple[float, float] | None = None,
+                   xcrop: Union[Tuple[float, float], None] = None,
+                   ycrop: Union[Tuple[float, float], None] = None,
                    node_size: int = 10,
                    node_color: str = 'lightblue',
                    path_width: int = 5) -> None:

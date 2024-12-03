@@ -5,8 +5,9 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
 import logging
 import networkx as nx
-import numpy as np
 import pandas as pd
+
+from typing import List, Union
 
 from janux.path_generators import calculate_free_flow_time
 from janux.path_generators import check_od_integrity
@@ -56,8 +57,12 @@ class ExtendedPathGenerator(BasicPathGenerator):
         self.origins = dict(enumerate(origins))
         self.destinations = dict(enumerate(destinations))
         
+        # Determine the absolute path to the `path_gen_params.json` file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        params_file_path = os.path.join(current_dir, "path_gen_params.json")
+        
         # Get parameters from the params.json file and update them with the provided kwargs
-        params = get_params("janux/path_generators/path_gen_params.json")
+        params = get_params(params_file_path)
         params.update(kwargs)
         
          # Get parameters
@@ -73,7 +78,7 @@ class ExtendedPathGenerator(BasicPathGenerator):
             self.max_path_length = float("inf")
         
         
-    def generate_routes(self, as_df: bool = True) -> pd.DataFrame | dict:
+    def generate_routes(self, as_df: bool = True) -> Union[pd.DataFrame, dict]:
         
         """
         Generates routes between origin-destination pairs in the network.
@@ -149,7 +154,7 @@ class ExtendedPathGenerator(BasicPathGenerator):
             return routes
 
 
-    def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> list[str] | None:
+    def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> Union[List[str], None]:
     
         """
         Samples a single route between an origin and a destination in the network.
@@ -199,7 +204,7 @@ class ExtendedPathGenerator(BasicPathGenerator):
                     return None
     
     
-    def _shift_parameters(self, tmp_beta: float, tmp_max_path_length: int | float):
+    def _shift_parameters(self, tmp_beta: float, tmp_max_path_length: Union[int, float]):
         if self.params_to_shift in ["beta", "both"]:
             shifted_beta = tmp_beta * ((100-self.shift_parameters_by) / 100) # Increase beta by shift_params%
             tmp_beta = min(shifted_beta, -.01)

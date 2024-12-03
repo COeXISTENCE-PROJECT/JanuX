@@ -9,7 +9,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from typing import Callable
+from typing import Callable, List, Union
 
 from janux.path_generators import calculate_free_flow_time
 from janux.path_generators import paths_to_df
@@ -66,7 +66,7 @@ class HeuristicPathGenerator(ExtendedPathGenerator):
         self.heur_weights = heur_weights
         
         
-    def generate_routes(self, as_df: bool = True) -> pd.DataFrame | dict:
+    def generate_routes(self, as_df: bool = True) -> Union[pd.DataFrame, dict]:
         assert self.num_samples >= self.number_of_paths, f"Number of samples ({self.num_samples}) should be \
             at least equal to the number of routes ({self.number_of_paths})"
         assert self.max_path_length > 0, f"Maximum path length should be greater than 0"
@@ -174,5 +174,5 @@ class HeuristicPathGenerator(ExtendedPathGenerator):
         assert len(self.heur_weights) == len(self.heuristics), f"Number of heuristic weights does not match with number of heuristics. ({len(self.heur_weights)} and {len(self.heuristics)})"
         
     
-    def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> list[str] | None:
+    def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> Union[List[str], None]:
         return super()._sample_single_route(origin, destination, node_potentials)
