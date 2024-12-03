@@ -10,15 +10,14 @@ authors = [
     { name = "Ahmet Onur Akman", email = "ahmetonurakman@gmail.com" }
 ]
 readme = "README.md"
-license = { file = "LICENSE" }
+license = { text = "MIT License" }
+keywords = ["routing", "graphs", "transportation", "networkx", "path", "enumeration"]
 requires-python = ">=3.6"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-keywords = ["routing", "graphs", "transportation", "networkx", "path", "enumeration"]
-repository = "https://github.com/COeXISTENCE-PROJECT/JanuX"
 dependencies = [
     "beautifulsoup4",
     "lxml",
@@ -29,3 +28,10 @@ dependencies = [
     "Pillow",
     "prettytable"
 ]
+
+[project.urls]
+repository = "https://github.com/COeXISTENCE-PROJECT/JanuX"
+"Bug Report" = "https://github.com/COeXISTENCE-PROJECT/JanuX/issues"
+
+[tool.setuptools.packages.find]
+include = ["janux", "janux.*"]
