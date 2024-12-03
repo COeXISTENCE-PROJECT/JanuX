@@ -8,7 +8,7 @@ import random
 
 from collections import Counter
 
-from visualizers import animate_edge_attributes
+from janux import animate_edge_attributes
 
 if __name__ == "__main__":
     

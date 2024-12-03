@@ -8,12 +8,11 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from path_generators import calculate_free_flow_time
-from path_generators import check_od_integrity
-from path_generators import paths_to_df
-from path_generators.basic_generator import BasicPathGenerator
-from utils import get_params
-from utils import iterable_to_string
+from janux.path_generators import calculate_free_flow_time
+from janux.path_generators import check_od_integrity
+from janux.path_generators import paths_to_df
+from janux.path_generators.basic_generator import BasicPathGenerator
+from janux.utils import get_params
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 
@@ -58,7 +57,7 @@ class ExtendedPathGenerator(BasicPathGenerator):
         self.destinations = dict(enumerate(destinations))
         
         # Get parameters from the params.json file and update them with the provided kwargs
-        params = get_params("path_generators/path_gen_params.json")
+        params = get_params("janux/path_generators/path_gen_params.json")
         params.update(kwargs)
         
          # Get parameters

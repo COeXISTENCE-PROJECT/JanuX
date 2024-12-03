@@ -8,9 +8,9 @@ import logging
 from concurrent.futures import ProcessPoolExecutor
 from PIL import Image
 
-from visualizers.visualization_utils import create_graph
-from visualizers.visualization_utils import parse_network_files
-from visualizers.visualize_edge_attributes import visualize_congestion
+from janux.visualizers.visualization_utils import create_graph
+from janux.visualizers.visualization_utils import parse_network_files
+from janux.visualizers.visualize_edge_attributes import visualize_congestion
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 

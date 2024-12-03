@@ -11,10 +11,10 @@ import pandas as pd
 
 from typing import Callable
 
-from path_generators import calculate_free_flow_time
-from path_generators import paths_to_df
-from path_generators.extended_generator import ExtendedPathGenerator
-from utils import iterable_to_string
+from janux.path_generators import calculate_free_flow_time
+from janux.path_generators import paths_to_df
+from janux.path_generators.extended_generator import ExtendedPathGenerator
+from janux.utils import iterable_to_string
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 

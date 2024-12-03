@@ -6,10 +6,10 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 import pandas as pd
 import time
 
-from graph_builders import build_digraph
-from path_generators import extended_generator
-from utils import iterable_to_string
-from visualizers import show_multi_routes
+from janux import build_digraph
+from janux import extended_generator
+from janux import show_multi_routes
+from janux import utils
 
 
 """
@@ -26,7 +26,7 @@ Workflow:
 
 Output:
 - Visualizations of the generated routes are saved as PNG files in the `examples/figures/` directory.
-- The list of routes is saved as a CSV file in the specified `routes_csv_path`.
+- The list of routes is saved as a CSV file in the specified `csv_save_path`.
 """
 
 if __name__ == "__main__":
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     for mid_point in mid_points:
         route_to_midpoint = extended_generator(network, origins, [mid_point], **kwargs)
         route_to_midpoint = route_to_midpoint["path"].values[0]
-        route_to_midpoint = iterable_to_string(route_to_midpoint.split(",")[:-1], ',')
+        route_to_midpoint = utils.iterable_to_string(route_to_midpoint.split(",")[:-1], ',')
         
         route_from_midpoint = extended_generator(network, [mid_point], destinations, **kwargs)
         route_from_midpoint = route_from_midpoint["path"].values[0]

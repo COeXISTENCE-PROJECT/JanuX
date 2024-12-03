@@ -10,7 +10,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from typing import Tuple
 
-from utils import remove_double_quotes
+from janux.utils import remove_double_quotes
 
 
 #################################################

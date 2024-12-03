@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 
-from visualizers import show_multi_routes
+from janux import show_multi_routes
 
 """
 This script visualizes multiple routes in a transportation network and saves the visualization as an image.

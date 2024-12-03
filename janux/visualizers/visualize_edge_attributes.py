@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
-from visualizers.visualization_utils import create_graph
-from visualizers.visualization_utils import parse_network_files
+from janux.visualizers.visualization_utils import create_graph
+from janux.visualizers.visualization_utils import parse_network_files
 
 
 #################################################

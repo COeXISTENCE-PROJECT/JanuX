@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 print(os.getcwd())
 
-from visualizers import show_single_route
+from janux import show_single_route
 
 """
 This script visualizes a single route in a transportation network and saves the visualization as an image.

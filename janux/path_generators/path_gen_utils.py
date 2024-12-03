@@ -5,8 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), './'))
 import networkx as nx
 import pandas as pd
 
-from keychain import Keychain as kc
-from utils import iterable_to_string
+from janux.utils import iterable_to_string
 
 
 
@@ -65,11 +64,10 @@ def paths_to_df(routes: dict, origins: dict, destinations: dict, free_flows: dic
         assert routes.keys() == free_flows.keys()
         for key in routes.keys():
             assert len(routes[key]) == len(free_flows[key])
-            
     # Initialize an empty DataFrame with the required columns
-    columns = [kc.ORIGINS, kc.DESTINATIONS, kc.PATH]
+    columns = ["origins", "destinations", "path"]
     if free_flows is not None:
-        columns.append(kc.FREE_FLOW_TIME)
+        columns.append('free_flow_time')
     paths_df = pd.DataFrame(columns=columns)
     
     # Iterate through the routes dictionary

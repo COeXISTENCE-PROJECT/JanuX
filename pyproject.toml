@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "janux"
+version = "0.1.0"
+description = "A robust yet simple tool for generating a set of path options in directed graphs. It is designed for efficient routing or creating path options for custom requirements in transportation networks."
+authors = [
+    { name = "Ahmet Onur Akman", email = "ahmetonurakman@gmail.com" }
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+keywords = ["routing", "graphs", "transportation", "networkx", "path", "enumeration"]
+repository = "https://github.com/COeXISTENCE-PROJECT/JanuX"
+dependencies = [
+    "beautifulsoup4",
+    "lxml",
+    "matplotlib",
+    "networkx",
+    "numpy",
+    "pandas",
+    "Pillow",
+    "prettytable"
+]

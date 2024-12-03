@@ -5,12 +5,12 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 
 import time
 
-from graph_builders import build_digraph
-from path_generators import calculate_free_flow_time
-from path_generators import heuristic_generator
-from utils import read_json
-from visualizers import show_multi_routes
-    
+from janux import build_digraph
+from janux import calculate_free_flow_time
+from janux import heuristic_generator
+from janux import show_multi_routes
+from janux import utils
+
     
 if __name__ == "__main__":
     
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     route_file_path = f"examples/network_files/{network_name}/{network_name}.rou.xml"
     nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
 
-    ods = read_json(f"examples/network_files/{network_name}/ods.json")
+    ods = utils.read_json(f"examples/network_files/{network_name}/ods.json")
     origins = ods["origins"]
     destinations = ods["destinations"]
 
