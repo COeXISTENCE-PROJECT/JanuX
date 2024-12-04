@@ -8,7 +8,7 @@ import random
 
 from collections import Counter
 
-from janux import animate_edge_attributes
+import janux as jx
 
 if __name__ == "__main__":
     
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         
     #################### Animate ############################ 
     
-    animate_edge_attributes(nod_file_path,
+    jx.animate_edge_attributes(nod_file_path,
                             edg_file_path,
                             congestion_dicts,
                             save_frames_dir=save_frames_path,

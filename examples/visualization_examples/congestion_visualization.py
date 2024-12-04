@@ -8,7 +8,7 @@ import random
 
 from collections import Counter
 
-from janux import show_edge_attributes
+import janux as jx
 
 """
 This script visualizes congestion levels in a transportation network based on edge attributes.
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     ########################################################
 
-    show_edge_attributes(
+    jx.show_edge_attributes(
         nod_file_path,
         edg_file_path,
         congestion_dict,

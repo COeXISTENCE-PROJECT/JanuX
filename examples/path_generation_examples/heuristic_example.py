@@ -5,11 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 
 import time
 
-from janux import build_digraph
-from janux import calculate_free_flow_time
-from janux import heuristic_generator
-from janux import show_multi_routes
-from janux import utils
+import janux as jx
 
     
 if __name__ == "__main__":
@@ -22,7 +18,7 @@ if __name__ == "__main__":
     route_file_path = f"examples/network_files/{network_name}/{network_name}.rou.xml"
     nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
 
-    ods = utils.read_json(f"examples/network_files/{network_name}/ods.json")
+    ods = jx.utils.read_json(f"examples/network_files/{network_name}/ods.json")
     origins = ods["origins"]
     destinations = ods["destinations"]
 
@@ -40,6 +36,7 @@ if __name__ == "__main__":
         "max_path_length": None,# Maximum length of the path, None for no limit
         "allow_loops": False,   # Allow loops in the path
         "adaptive": True,       # Use adaptive sampling (Shifts beta when it gets stuck)
+        "verbose": False        # (Don't) Print the progress of the path generation
     }
 
     visualization_kwargs = {
@@ -52,7 +49,7 @@ if __name__ == "__main__":
         return -sum(len(path) for path in [path1, path2, path3])
 
     def heuristic2(path1, path2, path3, network):
-        return -sum(calculate_free_flow_time(path, network) for path in [path1, path2, path3])
+        return -sum(jx.calculate_free_flow_time(path, network) for path in [path1, path2, path3])
 
     def heuristic3(path1, path2, path3, network):
         common_edges1 = set(path1).intersection(set(path2))
@@ -68,8 +65,9 @@ if __name__ == "__main__":
 
     start_time = time.time()
     # Generate network and paths
-    network = build_digraph(connection_file_path, edge_file_path, route_file_path)
-    routes = heuristic_generator(network, origins, destinations, heuristics, heur_weights, **path_gen_kwargs)
+    network = jx.build_digraph(connection_file_path, edge_file_path, route_file_path)
+    routes = jx.heuristic_generator(network, origins, destinations, heuristics, heur_weights, 
+                                 as_df=True, calc_free_flow=True, **path_gen_kwargs)
     print(f"Time taken: {time.time() - start_time:.2f} seconds")
     
     if show_routes:
@@ -82,7 +80,7 @@ if __name__ == "__main__":
                 title=f"Origin: {origin_idx} ({origin}), Destination: {dest_idx} ({destination})"
                 visualization_kwargs.update({"save_file_path": fig_save_path, "title": title})
                 # Show the routes
-                show_multi_routes(nod_file_path, edge_file_path, routes_to_show, origin, destination, **visualization_kwargs)
+                jx.show_multi_routes(nod_file_path, edge_file_path, routes_to_show, origin, destination, **visualization_kwargs)
     
     csv_save_path = os.path.join(csv_save_path, f"{network_name}_routes.csv")
     routes.to_csv(csv_save_path, index=False)

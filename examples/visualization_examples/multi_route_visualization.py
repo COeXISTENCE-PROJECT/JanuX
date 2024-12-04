@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 
-from janux import show_multi_routes
+import janux as jx
 
 """
 This script visualizes multiple routes in a transportation network and saves the visualization as an image.
@@ -50,4 +50,4 @@ if __name__ == "__main__":
 
     ########################################################
 
-    show_multi_routes(nod_file_path, edg_file_path, paths, origin, destination, autocrop=autocrop, xcrop=xcrop, ycrop=ycrop, save_file_path=save_figure_to)
+    jx.show_multi_routes(nod_file_path, edg_file_path, paths, origin, destination, autocrop=autocrop, xcrop=xcrop, ycrop=ycrop, save_file_path=save_figure_to)

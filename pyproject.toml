@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "janux"
-version = "0.1.2"
+version = "0.1.3"
 description = "A robust yet simple tool for generating a set of path options in directed graphs. It is designed for efficient routing or creating path options for custom requirements in transportation networks."
 authors = [
     { name = "Ahmet Onur Akman", email = "ahmetonurakman@gmail.com" }

@@ -5,10 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 
 import time
 
-from janux import build_digraph
-from janux import extended_generator
-from janux import show_multi_routes
-from janux import utils
+import janux as jx
     
 
 if __name__ == "__main__":
@@ -24,7 +21,7 @@ if __name__ == "__main__":
     nod_file_path = f"examples/network_files/{network_name}/{network_name}.nod.xml"
 
     # Read origins and destinations from the provided ods.json
-    ods = utils.read_json(f"examples/network_files/{network_name}/ods.json")
+    ods = jx.utils.read_json(f"examples/network_files/{network_name}/ods.json")
     origins = ods["origins"]
     destinations = ods["destinations"]
 
@@ -42,6 +39,7 @@ if __name__ == "__main__":
         "max_path_length": None,# Maximum length of the path, None for no limit
         "allow_loops": False,   # Allow loops in the path
         "adaptive": True,       # Use adaptive sampling (Shifts beta when it gets stuck)
+        "verbose": False        # (Don't) Print the progress of the path generation
     }
     
     visualization_kwargs = {
@@ -54,9 +52,9 @@ if __name__ == "__main__":
     
     start_time = time.time()
     # Generate network
-    network = build_digraph(connection_file_path, edge_file_path, route_file_path)
+    network = jx.build_digraph(connection_file_path, edge_file_path, route_file_path)
     # Generate routes
-    routes = extended_generator(network, origins, destinations, **path_gen_kwargs)
+    routes = jx.extended_generator(network, origins, destinations, as_df=True, calc_free_flow=True, **path_gen_kwargs)
     print(f"Time taken: {time.time() - start_time:.2f} seconds")
     
     if show_routes:
@@ -71,7 +69,7 @@ if __name__ == "__main__":
                 title=f"Origin: {origin_idx} ({origin}), Destination: {dest_idx} ({destination})"
                 visualization_kwargs.update({"save_file_path": fig_save_path, "title": title})
                 # Show the routes
-                show_multi_routes(nod_file_path, edge_file_path, routes_to_show, origin, destination, **visualization_kwargs)
+                jx.show_multi_routes(nod_file_path, edge_file_path, routes_to_show, origin, destination, **visualization_kwargs)
     
     # Save the routes to a CSV file    
     csv_save_path = os.path.join(csv_save_path, f"{network_name}_routes.csv")

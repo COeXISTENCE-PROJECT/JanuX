@@ -6,10 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '././')))
 import pandas as pd
 import time
 
-from janux import build_digraph
-from janux import extended_generator
-from janux import show_multi_routes
-from janux import utils
+import janux as jx
 
 
 """
@@ -69,14 +66,14 @@ if __name__ == "__main__":
     
     start_time = time.time()
     # Generate network and paths
-    network = build_digraph(connection_file_path, edge_file_path, route_file_path)
+    network = jx.build_digraph(connection_file_path, edge_file_path, route_file_path)
     routes = list()
     for mid_point in mid_points:
-        route_to_midpoint = extended_generator(network, origins, [mid_point], **kwargs)
+        route_to_midpoint = jx.extended_generator(network, origins, [mid_point], as_df=True, calc_free_flow=True, **kwargs)
         route_to_midpoint = route_to_midpoint["path"].values[0]
-        route_to_midpoint = utils.iterable_to_string(route_to_midpoint.split(",")[:-1], ',')
+        route_to_midpoint = jx.utils.iterable_to_string(route_to_midpoint.split(",")[:-1], ',')
         
-        route_from_midpoint = extended_generator(network, [mid_point], destinations, **kwargs)
+        route_from_midpoint = jx.extended_generator(network, [mid_point], destinations, as_df=True, calc_free_flow=True, **kwargs)
         route_from_midpoint = route_from_midpoint["path"].values[0]
         
         routes.append({
@@ -99,7 +96,7 @@ if __name__ == "__main__":
                 title=f"Origin: {origin_idx} ({origin}), Destination: {dest_idx} ({destination})"
                 visualization_kwargs.update({"save_file_path": fig_save_path, "title": title})
                 # Show the routes
-                show_multi_routes(nod_file_path, edge_file_path, routes_to_show, origin, destination, **visualization_kwargs)
+                jx.show_multi_routes(nod_file_path, edge_file_path, routes_to_show, origin, destination, **visualization_kwargs)
       
     csv_save_path = os.path.join(csv_save_path, f"{network_name}_routes.csv")  
     routes.to_csv(csv_save_path, index=False)

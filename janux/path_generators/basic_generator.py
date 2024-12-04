@@ -17,8 +17,6 @@ from janux.path_generators.base_generator import PathGenerator
 from janux.utils import get_params
 from janux.utils import iterable_to_string
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
-
 class BasicPathGenerator(PathGenerator):
 
     """
@@ -66,7 +64,7 @@ class BasicPathGenerator(PathGenerator):
         params = get_params(params_file_path)
         params.update(kwargs)
         
-         # Get parameters
+        # Get parameters
         self.number_of_paths = params["number_of_paths"]
         self.beta = params["beta"]
         self.weight = params["weight"]
@@ -77,8 +75,22 @@ class BasicPathGenerator(PathGenerator):
         np.random.seed(self.random_seed)
         self.rng = np.random.default_rng(self.random_seed)
         
+        self.verbose = params["verbose"]
+        self.logger = logging.getLogger(__name__)
+        if self.logger.hasHandlers():   self.logger.handlers.clear()
+        if self.verbose:
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.INFO)
+            formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.INFO)
+        else:
+            self.logger.addHandler(logging.NullHandler())
+            self.logger.setLevel(logging.CRITICAL + 1)
         
-    def generate_routes(self, as_df: bool = True) -> Union[pd.DataFrame, dict]:
+        
+    def generate_routes(self, as_df: bool = True, calc_free_flow: bool = False) -> Union[pd.DataFrame, dict]:
         
         """
         Generates routes between origin-destination pairs in the network.
@@ -91,6 +103,7 @@ class BasicPathGenerator(PathGenerator):
             as_df (bool): If True, the routes are returned as a pandas DataFrame. 
                         If False, the routes are returned as a dictionary. 
                         Defaults to True.
+            calc_free_flow (bool): If True, the free-flow travel time for each route is calculated.
 
         Returns:
             pd.DataFrame | dict: 
@@ -120,11 +133,14 @@ class BasicPathGenerator(PathGenerator):
                 while (len(sampled_routes) < self.num_samples) or (len(set(sampled_routes)) < self.number_of_paths):
                     path = self._sample_single_route(origin_name, dest_name, node_potentials)
                     sampled_routes.append(tuple(path))
-                logging.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
+                self.logger.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
                 routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
-                logging.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
+                self.logger.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
+                
         if as_df:
-            free_flows = {od: [calculate_free_flow_time(route, self.network) for route in routes[od]] for od in routes}
+            free_flows = None
+            if calc_free_flow:
+                free_flows = {od: [calculate_free_flow_time(route, self.network) for route in routes[od]] for od in routes}
             routes_df = paths_to_df(routes, self.origins, self.destinations, free_flows)
             return routes_df
         else:

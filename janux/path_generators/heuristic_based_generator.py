@@ -4,7 +4,6 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
 import inspect
-import logging
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -15,8 +14,6 @@ from janux.path_generators import calculate_free_flow_time
 from janux.path_generators import paths_to_df
 from janux.path_generators.extended_generator import ExtendedPathGenerator
 from janux.utils import iterable_to_string
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 
 class HeuristicPathGenerator(ExtendedPathGenerator):
     
@@ -66,7 +63,7 @@ class HeuristicPathGenerator(ExtendedPathGenerator):
         self.heur_weights = heur_weights
         
         
-    def generate_routes(self, as_df: bool = True) -> Union[pd.DataFrame, dict]:
+    def generate_routes(self, as_df: bool = True, calc_free_flow: bool = False) -> Union[pd.DataFrame, dict]:
         assert self.num_samples >= self.number_of_paths, f"Number of samples ({self.num_samples}) should be \
             at least equal to the number of routes ({self.number_of_paths})"
         assert self.max_path_length > 0, f"Maximum path length should be greater than 0"
@@ -85,9 +82,9 @@ class HeuristicPathGenerator(ExtendedPathGenerator):
                     
                     # If this gets stuck, increase beta and max_path_length
                     if (self.adaptive) and (iteration_count > self.tolerate_num_iterations):
-                        logging.warning(f"Exceeded tolerance for {origin_idx} -> {dest_idx}.")
+                        self.logger.warning(f"Exceeded tolerance for {origin_idx} -> {dest_idx}.")
                         self.beta, self.max_path_length = self._shift_parameters(self.beta, self.max_path_length)
-                        logging.info(f"Beta: {self.beta}, Max Path Length: {self.max_path_length}")
+                        self.logger.info(f"Beta: {self.beta}, Max Path Length: {self.max_path_length}")
                         iteration_count = 0
                         
                     path = self._sample_single_route(origin_name, dest_name, node_potentials)
@@ -96,12 +93,15 @@ class HeuristicPathGenerator(ExtendedPathGenerator):
                     iteration_count += 1
                 
                 self.beta, self.max_path_length = initial_beta, initial_max_path_len  
-                logging.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
+                self.logger.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
                 sampled_routes = sorted(list(sampled_routes), key=lambda x: iterable_to_string(x))
                 routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
-                logging.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
+                self.logger.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
+                
         if as_df:
-            free_flows = {od: [calculate_free_flow_time(route, self.network) for route in routes[od]] for od in routes}
+            free_flows = None
+            if calc_free_flow:
+                free_flows = {od: [calculate_free_flow_time(route, self.network) for route in routes[od]] for od in routes}
             routes_df = paths_to_df(routes, self.origins, self.destinations, free_flows)
             return routes_df
         else:

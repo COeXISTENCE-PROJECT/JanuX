@@ -3,19 +3,15 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), './')))
 
-import logging
 import networkx as nx
 import pandas as pd
 
 from typing import List, Union
 
 from janux.path_generators import calculate_free_flow_time
-from janux.path_generators import check_od_integrity
 from janux.path_generators import paths_to_df
 from janux.path_generators.basic_generator import BasicPathGenerator
 from janux.utils import get_params
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 
 class ExtendedPathGenerator(BasicPathGenerator):
     
@@ -51,11 +47,6 @@ class ExtendedPathGenerator(BasicPathGenerator):
                  **kwargs):
         
         super().__init__(network, origins, destinations, **kwargs)
-        check_od_integrity(self.network, origins, destinations)
-
-        # Convert origin and destination names to indices
-        self.origins = dict(enumerate(origins))
-        self.destinations = dict(enumerate(destinations))
         
         # Determine the absolute path to the `path_gen_params.json` file
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -65,7 +56,7 @@ class ExtendedPathGenerator(BasicPathGenerator):
         params = get_params(params_file_path)
         params.update(kwargs)
         
-         # Get parameters
+        # Get parameters
         self.allow_loops = params["allow_loops"]
         
         self.adaptive = params["adaptive"]
@@ -78,7 +69,7 @@ class ExtendedPathGenerator(BasicPathGenerator):
             self.max_path_length = float("inf")
         
         
-    def generate_routes(self, as_df: bool = True) -> Union[pd.DataFrame, dict]:
+    def generate_routes(self, as_df: bool = True, calc_free_flow: bool = False) -> Union[pd.DataFrame, dict]:
         
         """
         Generates routes between origin-destination pairs in the network.
@@ -92,6 +83,7 @@ class ExtendedPathGenerator(BasicPathGenerator):
         Args:
             as_df (bool): If True, returns the routes as a pandas DataFrame. If False, 
                           returns the routes as a dictionary. Defaults to True.
+            calc_free_flow (bool): If True, calculates the free-flow time for each route.
 
         Returns:
             pd.DataFrame | dict: 
@@ -132,9 +124,9 @@ class ExtendedPathGenerator(BasicPathGenerator):
                     
                     # If this gets stuck, increase beta and max_path_length
                     if (self.adaptive) and (iteration_count > self.tolerate_num_iterations):
-                        logging.warning(f"Exceeded tolerance for {origin_idx} -> {dest_idx}.")
+                        self.logger.warning(f"Exceeded tolerance for {origin_idx} -> {dest_idx}.")
                         self.beta, self.max_path_length = self._shift_parameters(self.beta, self.max_path_length)
-                        logging.info(f"Beta: {self.beta}, Max Path Length: {self.max_path_length}")
+                        self.logger.info(f"Beta: {self.beta}, Max Path Length: {self.max_path_length}")
                         iteration_count = 0
                         
                     path = self._sample_single_route(origin_name, dest_name, node_potentials)
@@ -143,11 +135,13 @@ class ExtendedPathGenerator(BasicPathGenerator):
                     iteration_count += 1
                 
                 self.beta, self.max_path_length = initial_beta, initial_max_path_len  
-                logging.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
+                self.logger.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
                 routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
-                logging.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
+                self.logger.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
         if as_df:
-            free_flows = {od: [calculate_free_flow_time(route, self.network) for route in routes[od]] for od in routes}
+            free_flows = None
+            if calc_free_flow:
+                free_flows = {od: [calculate_free_flow_time(route, self.network) for route in routes[od]] for od in routes}
             routes_df = paths_to_df(routes, self.origins, self.destinations, free_flows)
             return routes_df
         else:
