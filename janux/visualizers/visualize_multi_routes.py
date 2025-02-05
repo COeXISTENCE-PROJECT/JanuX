@@ -48,7 +48,7 @@ def show_multi_routes(nod_file_path: str,
         File path to save the generated plot as an image. If None, the plot is not saved.
     title : str, default="Path Visualization"
         Title of the plot window and saved figure.
-    cmap_names : list[str], default=['Reds', 'Blues', 'Greens', 'Purples', 'Oranges']
+    cmap_names : list[str], default=['Reds', 'Blues', 'Greens', 'Oranges', 'Greys', 'Purples', 'copper', 'pink']
         List of colormap names used to color the paths. Each path will use a different colormap.
     offsets : list | None, default=None
         List of offsets to shift each route for better visualization. If None, offsets are calculated automatically (recommended).
@@ -93,7 +93,7 @@ def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str,
                    show: bool = True,
                    save_file_path: Union[str, None] = None,
                    title: str = "Path Visualization",
-                   cmap_names: list[str] = ['Reds', 'Blues', 'Greens', 'Purples', 'Oranges'],
+                   cmap_names: list[str] = ['Reds', 'Blues', 'Greens', 'Oranges', 'Greys', 'Purples', 'copper', 'pink'],
                    offsets: Union[list, None] = None,
                    fig_size: tuple[int] = (12, 8),
                    autocrop: bool = True,
@@ -128,7 +128,6 @@ def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str,
             if origin_coords is not None: break  
     assert origin_coords is not None, f"Origin {origin_edge} is not found in the network."
     assert dest_coords is not None, f"Destination {destination_edge} is not found in the network."
-    #nx.draw_networkx_edges(graph, node_positions, edgelist=[origin_coords, dest_coords], edge_color=["black", "black"], width=5)
     
     # Autocropping limits
     x_max, x_min, y_max, y_min = float('-inf'), float('inf'), float('-inf'), float('inf')
@@ -142,7 +141,8 @@ def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str,
         path_edges_graph = {data_dict['edge_id']: (source, target) for source, target, data_dict in graph.edges(data=True)
                             if data_dict['edge_id'] in path_edges}
         # Get colormap
-        colors = get_colors(len(path_edges), cmap_names[len(cmap_names) % (path_idx+1)])
+        cmap_name = cmap_names[path_idx % len(cmap_names)]
+        colors = get_colors(len(path_edges), cmap_name)
         
         # Draw the path edges one by one
         for edge_id, (source_node, target_node) in path_edges_graph.items():
@@ -150,8 +150,7 @@ def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str,
             new_pos = shift_edge_by_offset(node_positions, source_node, target_node, offsets[path_idx])
             # Draw the edge
             color = colors[path_edges.index(edge_id)]
-            # Draw if it's not origin or destination
-            #if edge_id not in (origin_edge, destination_edge):
+            # Draw the lane
             nx.draw_networkx_edges(graph, new_pos, edgelist=[(source_node, target_node)], edge_color=[color], width=path_width)
             
             if autocrop:
@@ -161,6 +160,7 @@ def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str,
                 y_max = max(y_max, new_pos[source_node][1], new_pos[target_node][1])
                 y_min = min(y_min, new_pos[source_node][1], new_pos[target_node][1])
         
+        # Create a legend artist with representative color from the path
         artist = plt.Line2D([0], [0], color=colors[len(colors)//2], lw=path_width, label=f"Path {path_idx}")
         artists.append(artist)
         
@@ -190,7 +190,7 @@ def visualize_paths(graph: nx.DiGraph, paths: list[list[str]], origin_edge: str,
 
         # Set plot limits
         plt.xlim(x_min - autocrop_margin, x_max + autocrop_margin)
-        plt.ylim(y_min-autocrop_margin, y_max+autocrop_margin)
+        plt.ylim(y_min - autocrop_margin, y_max+autocrop_margin)
     else:    
         if xcrop is not None:
             plt.xlim(xcrop)
