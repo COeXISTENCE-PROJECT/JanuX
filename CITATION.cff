@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - name: "Ahmet Onur Akman"
+    orcid: "0009-0006-4461-5025"
+title: "JanuX"
+version: "1.0.0"
+date-released: "2025-02-05"
+url: "https://github.com/COeXISTENCE-PROJECT/JanuX"
+license: "MIT"
+type: software
+preferred-citation:
+  type: misc
+  author: "Ahmet Onur Akman"
+  title: "JanuX"
+  year: 2025
+  url: "https://github.com/COeXISTENCE-PROJECT/JanuX"
+  note: "Accessed: 2025-02-09"

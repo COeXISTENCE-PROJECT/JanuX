@@ -25,3 +25,19 @@
 ## License
 
 This project is licensed under the [MIT License](LICENSE.txt).
+
+---
+
+## Citation
+
+If you use this repository, please cite it using the following BibTeX:
+
+```bibtex
+@misc{JanuX,
+    author       = {Ahmet Onur Akman},
+    title        = {JanuX},
+    year         = {2025},
+    url          = {https://github.com/COeXISTENCE-PROJECT/JanuX},
+    publisher    = {GitHub},
+    journal      = {GitHub repository}
+}
