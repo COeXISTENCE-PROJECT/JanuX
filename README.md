@@ -1,6 +1,6 @@
 # JanuX
 
-<img src="graphics/janux.svg" alt="JanuX Logo" align="right" width="200">
+<img src="graphics/janux_logo.png" alt="JanuX Logo" align="right" width="200">
 
 **Janus**, the Roman god of beginnings, transitions and duality, is known for his two faces. In Roman mythology, he symbolizes direction, beginnings, ends and contrasts.
 
