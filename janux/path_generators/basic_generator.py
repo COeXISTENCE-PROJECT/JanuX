@@ -69,6 +69,7 @@ class BasicPathGenerator(PathGenerator):
         self.beta = params["beta"]
         self.weight = params["weight"]
         self.num_samples = params["num_samples"]
+        self.all_origins_to_all_destinations = params["all_origins_to_all_destinations"]
         
         # Set random seed if provided
         self.random_seed = params.get("random_seed", None)
@@ -126,17 +127,20 @@ class BasicPathGenerator(PathGenerator):
         assert self.beta < 0, f"Beta should be less than 0"
         
         routes = dict()   # Tuple<od_id, dest_id> : List<routes>
-        for dest_idx, dest_name in self.destinations.items():
-            node_potentials = dict(nx.shortest_path_length(self.network, target=dest_name, weight=self.weight))
-            for origin_idx, origin_name in self.origins.items():
-                sampled_routes = list()   # num_samples number of routes
-                while (len(sampled_routes) < self.num_samples) or (len(set(sampled_routes)) < self.number_of_paths):
-                    path = self._sample_single_route(origin_name, dest_name, node_potentials)
-                    sampled_routes.append(tuple(path))
-                self.logger.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
-                routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
+
+        if self.all_origins_to_all_destinations:
+            for dest_idx, dest_name in self.destinations.items():
+                node_potentials = dict(nx.shortest_path_length(self.network, target=dest_name, weight=self.weight))
+                for origin_idx, origin_name in self.origins.items():
+                    routes[(origin_idx, dest_idx)] = self._process_od(origin_name, origin_idx, dest_name, dest_idx, node_potentials)
+                    self.logger.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
+
+        else:
+            for (dest_idx, dest_name), (origin_idx, origin_name) in zip(self.destinations.items(), self.origins.items()):
+                node_potentials = dict(nx.shortest_path_length(self.network, target=dest_name, weight=self.weight))
+                routes[(origin_idx, dest_idx)] = self._process_od(origin_name, origin_idx, dest_name, dest_idx, node_potentials) 
                 self.logger.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
-                
+
         if as_df:
             free_flows = None
             if calc_free_flow:
@@ -146,6 +150,18 @@ class BasicPathGenerator(PathGenerator):
         else:
             return routes
 
+    def _process_od(self, origin_name, origin_idx, dest_name, dest_idx, node_potentials: dict):
+        sampled_routes = list()   # num_samples number of routes
+        
+        while (len(sampled_routes) < self.num_samples) or (len(set(sampled_routes)) < self.number_of_paths):
+            path = self._sample_single_route(origin_name, dest_name, node_potentials)
+            sampled_routes.append(tuple(path))
+
+        self.logger.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
+        picked_routes = self._pick_routes_from_samples(sampled_routes)
+
+        return picked_routes
+                
 
     def _sample_single_route(self, origin: str, destination: str, node_potentials: dict) -> Union[List[str], None]:
         
