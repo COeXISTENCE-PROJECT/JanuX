@@ -1,4 +1,9 @@
 [![DOI](https://zenodo.org/badge/889013393.svg)](https://doi.org/10.5281/zenodo.17422815)
+![PyPI - Version](https://img.shields.io/pypi/v/janux)
+![GitHub License](https://img.shields.io/github/license/COeXISTENCE-PROJECT/janux)
+![GitHub Release](https://img.shields.io/github/v/release/COeXISTENCE-PROJECT/janux)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/janux)
+
 
 # JanuX
 
@@ -35,11 +40,12 @@ This project is licensed under the [MIT License](LICENSE.txt).
 If you use this repository, please cite it using the following BibTeX:
 
 ```bibtex
-@misc{JanuX,
-    author       = {Ahmet Onur Akman},
-    title        = {JanuX},
-    year         = {2025},
-    url          = {https://github.com/COeXISTENCE-PROJECT/JanuX},
-    publisher    = {GitHub},
-    journal      = {GitHub repository}
+@software{JanuX,
+  author = {Akman, Ahmet Onur},
+  title = {{JanuX}},
+  doi = {https://doi.org/10.5281/zenodo.17422816},
+  url = {https://github.com/COeXISTENCE-PROJECT/JanuX},
+  version = {1.0.1},
+  month = oct,
+  year = {2025}
 }
