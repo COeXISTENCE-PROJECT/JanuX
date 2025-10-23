@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/889013393.svg)](https://doi.org/10.5281/zenodo.17422815)
+
 # JanuX
 
 <img src="graphics/janux_logo.png" alt="JanuX Logo" align="right" width="200">
