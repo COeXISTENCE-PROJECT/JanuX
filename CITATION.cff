@@ -1,10 +1,11 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: "Akman"
-  given-names: "Ahmet Onur"
-  orcid: "https://orcid.org/0009-0006-4461-5025"
+  - family-names: "Akman"
+    given-names: "Ahmet Onur"
+    orcid: "https://orcid.org/0009-0006-4461-5025"
 title: "JanuX"
-version: 1.0.0
-date-released: 2025-02-05
+version: 1.0.1
+doi: "https://doi.org/10.5281/zenodo.17422816"
+date-released: 2025-10-23
 url: "https://github.com/COeXISTENCE-PROJECT/JanuX"
