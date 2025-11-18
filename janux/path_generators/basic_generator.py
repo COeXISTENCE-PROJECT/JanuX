@@ -90,20 +90,34 @@ class BasicPathGenerator(PathGenerator):
             self.logger.setLevel(logging.CRITICAL + 1)
         
         
-    def generate_routes(self, as_df: bool = True, calc_free_flow: bool = False) -> Union[pd.DataFrame, dict]:
+    def generate_routes(self, as_df: bool = True, calc_free_flow: bool = False, max_resample_iterations: int = 0) -> Union[pd.DataFrame, dict]:
         
         """
         Generates routes between origin-destination pairs in the network.
 
-        This method samples a specified number of routes for each origin-destination pair 
-        using a probabilistic logit model and selects unique paths from the sampled routes. 
-        The results can be returned either as a DataFrame or a dictionary.
+        This method samples routes for each origin-destination pair using a probabilistic 
+        logit model and selects unique paths from the sampled routes. The results can be 
+        returned either as a DataFrame or a dictionary. Sampling continues until both 
+        of the following conditions are satisfied:
+
+            1. At least `num_samples` routes have been drawn, and
+            2. At least `number_of_paths` unique routes have been observed,
+
+        or until a safeguard limit of `num_samples + max_resample_iterations` iterations
+        is reached, whichever comes first. If, after exhausting the safeguard iterations,
+        fewer than `number_of_paths` unique routes are available, the method returns all
+        available unique routes for that origin-destination pair (fewer than requested).
 
         Args:
             as_df (bool): If True, the routes are returned as a pandas DataFrame. 
                         If False, the routes are returned as a dictionary. 
                         Defaults to True.
             calc_free_flow (bool): If True, the free-flow travel time for each route is calculated.
+            max_resample_iterations (int): Maximum number of additional sampling
+                                           iterations allowed beyond `num_samples`
+                                           for each origin-destination pair when
+                                           attempting to discover enough unique routes.
+                                           Defaults to 0.
 
         Returns:
             pd.DataFrame | dict: 
@@ -117,8 +131,9 @@ class BasicPathGenerator(PathGenerator):
 
         Notes:
             - Each route is represented as a list of node names.
-            - The sampling process ensures that the specified number of unique paths 
-            (`number_of_paths`) is selected for each origin-destination pair.
+            - The sampling process aims to obtain `number_of_paths` unique routes
+              per origin-destination pair but may return fewer if the safeguard 
+              iteration limit is reached.
         """
         
         assert self.num_samples >= self.number_of_paths, f"Number of samples ({self.num_samples}) should be \
@@ -130,9 +145,15 @@ class BasicPathGenerator(PathGenerator):
             node_potentials = dict(nx.shortest_path_length(self.network, target=dest_name, weight=self.weight))
             for origin_idx, origin_name in self.origins.items():
                 sampled_routes = list()   # num_samples number of routes
+
+                iter = 0
                 while (len(sampled_routes) < self.num_samples) or (len(set(sampled_routes)) < self.number_of_paths):
+                    if iter > max_resample_iterations + self.num_samples:
+                        break
                     path = self._sample_single_route(origin_name, dest_name, node_potentials)
                     sampled_routes.append(tuple(path))
+                    iter += 1
+                
                 self.logger.info(f"Sampled {len(sampled_routes)} paths for {origin_idx} -> {dest_idx}")
                 routes[(origin_idx, dest_idx)] = self._pick_routes_from_samples(sampled_routes)
                 self.logger.info(f"Selected {len(set(routes[(origin_idx, dest_idx)]))} paths for {origin_idx} -> {dest_idx}")
@@ -189,36 +210,52 @@ class BasicPathGenerator(PathGenerator):
     def _pick_routes_from_samples(self, sampled_routes: list[tuple]) -> list[tuple]:
         
         """
-        Selects the desired number of unique routes from a set of sampled routes.
+        Selects up to the desired number of unique routes from a set of sampled routes.
 
-        This method filters through a list of sampled routes to pick a specified number
-        of unique paths. The selection is based on the frequency of occurrence of each
-        unique route, using a probability distribution derived from their counts.
+        This method filters through a list of sampled routes to pick a set of unique paths. 
+        The selection is based on the frequency of occurrence of each unique route, 
+        using a probability distribution derived from their counts.
 
         Args:
             sampled_routes (list[tuple]): A list of sampled routes, where each route is 
                                         represented as a tuple of nodes.
 
         Returns:
-            list[tuple]: A list of selected unique routes, with the number of routes
-                        equal to the specified `number_of_paths`.
+            list[tuple]: A list of selected unique routes. The length of this list is 
+                        `number_of_paths` if enough unique routes are available.
+                        Otherwise, is equals to the number of unique routes observed.
 
         Raises:
-            AssertionError: If the number of paths to select exceeds the total number
-                            of sampled routes or the number of unique routes.
+            AssertionError: If the number of paths to select exceeds the total number of 
+                            sampled routes or the `number_of_paths` is not strictly positive.
+
+        Notes:
+            - If `sampled_routes` is empty, an empty list is returned.
         """
         
         assert self.number_of_paths <= len(sampled_routes), f"Number of paths ({self.number_of_paths}) should be less than or equal to the number of sampled routes ({len(sampled_routes)})"
         assert self.number_of_paths > 0, f"Number of paths should be greater than 0"
         
+        # In case of an early stop due to hitting max_resample_iterations in generate_routes()
+        if not sampled_routes:
+            return [] 
+
         sampled_routes_by_str = np.array([iterable_to_string(route, ",") for route in sampled_routes])
         # Get each unique route and their counts
         unique_routes, route_counts = np.unique(sampled_routes_by_str, return_counts=True)
         # Calculate sampling probabilities (according to their counts)
         sampling_probabilities = route_counts / route_counts.sum()
+
         # Sample from the unique items according to the probabilities
-        assert self.number_of_paths <= len(unique_routes), f"Cannot sample {self.number_of_paths} distinct items from {len(unique_routes)} unique items."
-        picked_routes = self.rng.choice(unique_routes, size=self.number_of_paths, p=sampling_probabilities, replace=False)
+        # Allow picking less than the requested number_of_paths if the number of paths is insufficient
+        n_to_pick = min(self.number_of_paths, len(unique_routes))
+        if n_to_pick == 0:
+            return []
+        if n_to_pick < self.number_of_paths and self.verbose:
+            self.logger.warning(
+                f"Requested {self.number_of_paths} unique paths but only {len(unique_routes)} found; returning {n_to_pick}."
+            )
+        picked_routes = self.rng.choice(unique_routes, size=n_to_pick, p=sampling_probabilities, replace=False)
         picked_routes = [tuple(route.split(",")) for route in picked_routes]
         return picked_routes
 

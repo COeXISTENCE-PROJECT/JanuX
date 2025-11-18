@@ -10,11 +10,12 @@ from .basic_generator import BasicPathGenerator
 def basic_generator(network: nx.DiGraph,
                     origins: list[str], 
                     destinations: list[str],
+                    max_resample_iterations: int = 0,
                     as_df: bool = False,
                     calc_free_flow: bool = False,
                     **kwargs) -> pd.DataFrame:
     generator = BasicPathGenerator(network, origins, destinations, **kwargs)
-    return generator.generate_routes(as_df=as_df, calc_free_flow=calc_free_flow)
+    return generator.generate_routes(as_df=as_df, calc_free_flow=calc_free_flow, max_resample_iterations=max_resample_iterations)
 
 ###########################################################################
 
